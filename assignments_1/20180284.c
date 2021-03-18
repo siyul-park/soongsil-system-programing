@@ -38,12 +38,9 @@ void load_values(FILE *fp, char *buffer, size_t size) {
     free(str_buffer);
 }
 
-void *load_data(char *name, size_t unit_size) {
-    size_t size = get_file_size(name);
+void *load_data(FILE *fp, size_t size, size_t unit_size) {
     size_t buffer_size = size / sizeof(char) * 8;
     
-    FILE *fp = fopen(name, "r");
-
     char *buffer = malloc(buffer_size);
     char *unit_buffer = malloc(unit_size);
 
@@ -59,7 +56,6 @@ void *load_data(char *name, size_t unit_size) {
     }
 
     free(unit_buffer);
-    fclose(fp);
 
     return buffer;
 }
@@ -154,9 +150,13 @@ int main() {
     char *name = "/Users/siyual.park/Project/soongsil/soongsil-system-programing/assignments_1/input";
     
     size_t size = get_file_size(name);
-    size_t data_size = size / 8;
+    FILE *fp = fopen(name, "r");
+    
+    void *data = load_data(fp, size, 8);
 
-    void *data = load_data(name, 8);
+    fclose(fp);
+
+    size_t data_size = size / 8;
 
     print_data(data, data_size);
 
