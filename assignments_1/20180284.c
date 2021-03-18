@@ -163,7 +163,7 @@ void print_signed_int() {
 void print_unsigned_int() {
     struct Array data = load(NAME, sizeof(unsigned int));
     size_t count = data.count;
-    int *value = data.value;
+    unsigned int *value = data.value;
 
     for (size_t i = 0; i < count; i++) {
         printf("%u", value[i]);
