@@ -13,12 +13,10 @@ size_t get_file_size(char *name) {
     return size;
 }
 
-void *load_values(FILE *fp, size_t size) {
+void load_values(FILE *fp, char *buffer, size_t size) {
     size_t str_buffer_size = size * sizeof(char) * 8;
 
     char *str_buffer = calloc(str_buffer_size, sizeof(char));
-    char *buffer = calloc(size, sizeof(char));
-
     fread(str_buffer, sizeof(char), str_buffer_size, fp);
 
     unsigned char byte = 0;
@@ -38,8 +36,6 @@ void *load_values(FILE *fp, size_t size) {
     }
 
     free(str_buffer);
-
-    return buffer;
 }
 
 void *load_data(char *name, size_t unit_size) {
@@ -49,13 +45,15 @@ void *load_data(char *name, size_t unit_size) {
     FILE *fp = fopen(name, "r");
 
     char *buffer = malloc(buffer_size);
+    char *unit_buffer = malloc(unit_size);
+
     memset(buffer, 0, buffer_size);
 
     char *desk = buffer;
     while (feof(fp) == 0) {
-        char *value_buffer = load_values(fp, unit_size);
-        memcpy(desk, value_buffer, unit_size);
-        free(value_buffer);
+        memset(unit_buffer, 0, unit_size);
+        load_values(fp, unit_buffer, unit_size);
+        memcpy(desk, unit_size, unit_size);
 
         desk += unit_size;
     }
