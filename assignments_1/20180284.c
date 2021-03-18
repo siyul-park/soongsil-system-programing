@@ -53,7 +53,7 @@ void *load_data(char *name, size_t unit_size) {
     while (feof(fp) == 0) {
         memset(unit_buffer, 0, unit_size);
         load_values(fp, unit_buffer, unit_size);
-        memcpy(desk, unit_size, unit_size);
+        memcpy(desk, unit_buffer, unit_size);
 
         desk += unit_size;
     }
