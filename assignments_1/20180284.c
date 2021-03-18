@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define NAME "/Users/siyual.park/Project/soongsil/soongsil-system-programing/assignments_1/input"
+
+
 size_t get_file_size(char *name) {
     FILE *fp = fopen(name, "r");
 
@@ -61,10 +64,17 @@ void *load_data(FILE *fp, size_t size, size_t unit_size) {
 }
 
 
-void print_data(char *data, size_t size) {
+void print_data() {
+    size_t size = get_file_size(NAME);
+    size_t data_size = size / 8;
+
+    FILE *fp = fopen(NAME, "r");
+    
+    char *data = load_data(fp, size, sizeof(char));
+
     char maxPow = (char)(1 << (8-1));
 
-    for (size_t i = 0; i < size; i++) {
+    for (size_t i = 0; i < data_size; i++) {
         char current = data[i];
         for (size_t j = 0; j < 8; ++j) {
             printf("%u", current & maxPow ? 1 : 0);
@@ -75,22 +85,49 @@ void print_data(char *data, size_t size) {
     printf("\n");
 }
 
-void print_signed_char(char *data, size_t size) {
-    for (size_t i = 0; i < size; i++) {
+void print_signed_char() {
+    size_t size = get_file_size(NAME);
+    size_t data_size = size / 8;
+
+    FILE *fp = fopen(NAME, "r");
+    
+    char *data = load_data(fp, size, sizeof(char));
+
+    fclose(fp);
+
+    for (size_t i = 0; i < data_size / sizeof(char); i++) {
         printf("%d", data[i]);
     }
     printf("\n");
 }
 
-void print_unsigned_char(unsigned char *data, size_t size) {
-    for (size_t i = 0; i < size; i++) {
+void print_unsigned_char() {
+    size_t size = get_file_size(NAME);
+    size_t data_size = size / 8;
+
+    FILE *fp = fopen(NAME, "r");
+    
+    unsigned char *data = load_data(fp, size, sizeof(unsigned char));
+
+    fclose(fp);
+
+    for (size_t i = 0; i < data_size / sizeof(unsigned char); i++) {
         printf("%u", data[i]);
     }
     printf("\n");
 }
 
-void print_ascii(char *data, size_t size) {
-    for (size_t i = 0; i < size; i++) {
+void print_ascii() {
+    size_t size = get_file_size(NAME);
+    size_t data_size = size / 8 / sizeof(char);
+
+    FILE *fp = fopen(NAME, "r");
+    
+    char *data = load_data(fp, size, sizeof(char));
+
+    fclose(fp);
+
+    for (size_t i = 0; i < data_size; i++) {
         char current = data[i];
         if (current >= 0 && current <= 127) {
             printf("%c", data[i]);
@@ -99,80 +136,135 @@ void print_ascii(char *data, size_t size) {
         }
     }
     printf("\n");
+
+    free(data);
 }
 
-void print_signed_int(int *data, size_t size) {
-    for (size_t i = 0; i < size; i++) {
-        printf("%d", data[i]);
-    }
-    printf("\n");
-}
+void print_signed_int() {
+    size_t size = get_file_size(NAME);
+    size_t data_size = size / 8 / sizeof(int);
 
-void print_unsigned_int(unsigned int *data, size_t size) {
-    for (size_t i = 0; i < size; i++) {
-        printf("%u", data[i]);
-    }
-    printf("\n");
-}
-
-void print_signed_float(float *data, size_t size) {
-    for (size_t i = 0; i < size; i++) {
-        printf("%0.4f", data[i]);
-    }
-    printf("\n");
-}
-
-// ??
-void print_unsigned_float(float *data, size_t size) {
-    for (size_t i = 0; i < size; i++) {
-        printf("%0.4f", data[i]);
-    }
-    printf("\n");
-}
-
-void print_signed_double(double *data, size_t size) {
-    for (size_t i = 0; i < size; i++) {
-        // ??
-        printf("%0.4lf", data[i]);
-    }
-    printf("\n");
-}
-
-void print_unsigned_double(double *data, size_t size) {
-    for (size_t i = 0; i < size; i++) {
-        // ??
-        printf("%0.4lf", data[i]);
-    }
-    printf("\n");
-}
-
-int main() {
-    char *name = "/Users/siyual.park/Project/soongsil/soongsil-system-programing/assignments_1/input";
+    FILE *fp = fopen(NAME, "r");
     
-    size_t size = get_file_size(name);
-    FILE *fp = fopen(name, "r");
-    
-    void *data = load_data(fp, size, 8);
+    int *data = load_data(fp, size, sizeof(int));
 
     fclose(fp);
 
-    size_t data_size = size / 8;
-
-    print_data(data, data_size);
-
-    print_signed_char(data, data_size);
-    print_ascii(data, data_size);
-    print_unsigned_char(data, data_size);
-
-    print_signed_int(data, data_size / sizeof(int));
-    print_unsigned_int(data, data_size / sizeof(int));
-
-    print_signed_float(data, data_size / sizeof(float));
-    print_unsigned_float(data, data_size / sizeof(float));
-
-    print_signed_double(data, data_size / sizeof(double));
-    print_unsigned_double(data, data_size / sizeof(double));
+    for (size_t i = 0; i < data_size; i++) {
+        printf("%d", data[i]);
+    }
+    printf("\n");
 
     free(data);
+}
+
+void print_unsigned_int() {
+    size_t size = get_file_size(NAME);
+    size_t data_size = size / 8 / sizeof(unsigned int);
+
+    FILE *fp = fopen(NAME, "r");
+    
+    unsigned int *data = load_data(fp, size, sizeof(unsigned int));
+
+    fclose(fp);
+
+    for (size_t i = 0; i < data_size; i++) {
+        printf("%u", data[i]);
+    }
+    printf("\n");
+    
+    free(data);
+}
+
+void print_signed_float() {
+    size_t size = get_file_size(NAME);
+    size_t data_size = size / 8 / sizeof(float);
+
+    FILE *fp = fopen(NAME, "r");
+    
+    float *data = load_data(fp, size, sizeof(float));
+
+    fclose(fp);
+
+    for (size_t i = 0; i < data_size; i++) {
+        printf("%0.4f", data[i]);
+    }
+    printf("\n");
+    
+    free(data);
+}
+
+// ??
+void print_unsigned_float() {
+    size_t size = get_file_size(NAME);
+    size_t data_size = size / 8 / sizeof(float);
+
+    FILE *fp = fopen(NAME, "r");
+    
+    float *data = load_data(fp, size, sizeof(float));
+
+    fclose(fp);
+
+    for (size_t i = 0; i < data_size; i++) {
+        printf("%0.4f", data[i]);
+    }
+    printf("\n");
+
+    free(data);
+}
+
+void print_signed_double() {
+    size_t size = get_file_size(NAME);
+    size_t data_size = size / 8 / sizeof(double);
+
+    FILE *fp = fopen(NAME, "r");
+    
+    double *data = load_data(fp, size, sizeof(double));
+
+    fclose(fp);
+
+    for (size_t i = 0; i < data_size; i++) {
+        printf("%0.4lf", data[i]);
+    }
+    printf("\n");
+    
+    free(data);
+}
+
+void print_unsigned_double() {
+    size_t size = get_file_size(NAME);
+    size_t data_size = size / 8 / sizeof(double);
+
+    FILE *fp = fopen(NAME, "r");
+    
+    double *data = load_data(fp, size, sizeof(double));
+
+    fclose(fp);
+
+    for (size_t i = 0; i < data_size; i++) {
+        // ??
+        printf("%0.4lf", data[i]);
+    }
+    printf("\n");
+
+    free(data);
+}
+
+int main() {
+    print_data();
+
+    print_signed_char();
+    print_ascii();
+    print_unsigned_char();
+
+    print_signed_int();
+    print_unsigned_int();
+
+    print_signed_float();
+    print_unsigned_float();
+
+    print_signed_double();
+    print_unsigned_double();
+
     return 0;
 }
