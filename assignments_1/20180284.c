@@ -58,6 +58,7 @@ void *load_data(char *name, size_t unit_size) {
         desk += unit_size;
     }
 
+    free(unit_buffer);
     fclose(fp);
 
     return buffer;
