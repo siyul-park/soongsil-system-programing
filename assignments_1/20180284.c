@@ -72,6 +72,8 @@ void print_data() {
     
     char *data = load_data(fp, size, sizeof(char));
 
+    fclose(fp);
+
     char maxPow = (char)(1 << (8-1));
 
     for (size_t i = 0; i < data_size; i++) {
