@@ -31,7 +31,8 @@ void *load_values(FILE *fp, size_t size) {
         }
 
         if (((i + 1) % 8) == 0) {
-            memcpy(buffer + size - ((i + 1) / 8), &byte, sizeof(char));
+            char *desk = buffer + size - ((i + 1) / 8);
+            memcpy(desk, &byte, sizeof(char));
             byte = 0;
         }
     }
