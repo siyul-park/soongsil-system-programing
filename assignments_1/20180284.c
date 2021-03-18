@@ -4,6 +4,12 @@
 
 #define NAME "/Users/siyual.park/Project/soongsil/soongsil-system-programing/assignments_1/input"
 
+struct Array {
+    void* value;
+    size_t size;
+    size_t count;
+};
+
 
 size_t get_file_size(char *name) {
     FILE *fp = fopen(name, "r");
@@ -63,21 +69,29 @@ void *load_data(FILE *fp, size_t size, size_t unit_size) {
     return buffer;
 }
 
-
-void print_data() {
+struct Array load(char *name, size_t unit_size) {
     size_t size = get_file_size(NAME);
-    size_t data_size = size / 8;
+    size_t data_size = size / 8 / unit_size;
 
     FILE *fp = fopen(NAME, "r");
     
-    char *data = load_data(fp, size, sizeof(char));
+    void *data = load_data(fp, size, unit_size);
 
     fclose(fp);
+    
+    return (struct Array) { .value = data, .size = unit_size, .count = data_size };
+}
+
+
+void print_data() {
+    struct Array data = load(NAME, sizeof(char));
+    size_t count = data.count;
+    char *value = data.value;
 
     char maxPow = (char)(1 << (8-1));
 
-    for (size_t i = 0; i < data_size; i++) {
-        char current = data[i];
+    for (size_t i = 0; i < count; i++) {
+        char current = value[i];
         for (size_t j = 0; j < 8; ++j) {
             printf("%u", current & maxPow ? 1 : 0);
             current = current << 1;
@@ -85,171 +99,131 @@ void print_data() {
         printf(" ");
     }
     printf("\n");
+
+    free(value);
 }
 
 void print_signed_char() {
-    size_t size = get_file_size(NAME);
-    size_t data_size = size / 8;
+    struct Array data = load(NAME, sizeof(char));
+    size_t count = data.count;
+    char *value = data.value;
 
-    FILE *fp = fopen(NAME, "r");
-    
-    char *data = load_data(fp, size, sizeof(char));
-
-    fclose(fp);
-
-    for (size_t i = 0; i < data_size / sizeof(char); i++) {
-        printf("%d", data[i]);
+    for (size_t i = 0; i < count; i++) {
+        printf("%d", value[i]);
     }
     printf("\n");
+
+    free(value);
 }
 
 void print_unsigned_char() {
-    size_t size = get_file_size(NAME);
-    size_t data_size = size / 8;
+    struct Array data = load(NAME, sizeof(unsigned char));
+    size_t count = data.count;
+    unsigned char *value = data.value;
 
-    FILE *fp = fopen(NAME, "r");
-    
-    unsigned char *data = load_data(fp, size, sizeof(unsigned char));
-
-    fclose(fp);
-
-    for (size_t i = 0; i < data_size / sizeof(unsigned char); i++) {
-        printf("%u", data[i]);
+    for (size_t i = 0; i < count; i++) {
+        printf("%u", value[i]);
     }
     printf("\n");
+
+    free(value);
 }
 
 void print_ascii() {
-    size_t size = get_file_size(NAME);
-    size_t data_size = size / 8 / sizeof(char);
+    struct Array data = load(NAME, sizeof(char));
+    size_t count = data.count;
+    char *value = data.value;
 
-    FILE *fp = fopen(NAME, "r");
-    
-    char *data = load_data(fp, size, sizeof(char));
-
-    fclose(fp);
-
-    for (size_t i = 0; i < data_size; i++) {
-        char current = data[i];
+    for (size_t i = 0; i < count; i++) {
+        char current = value[i];
         if (current >= 0 && current <= 127) {
-            printf("%c", data[i]);
+            printf("%c", value[i]);
         } else {
             printf(".");
         }
     }
     printf("\n");
 
-    free(data);
+    free(value);
 }
 
 void print_signed_int() {
-    size_t size = get_file_size(NAME);
-    size_t data_size = size / 8 / sizeof(int);
+    struct Array data = load(NAME, sizeof(int));
+    size_t count = data.count;
+    int *value = data.value;
 
-    FILE *fp = fopen(NAME, "r");
-    
-    int *data = load_data(fp, size, sizeof(int));
-
-    fclose(fp);
-
-    for (size_t i = 0; i < data_size; i++) {
-        printf("%d", data[i]);
+    for (size_t i = 0; i < count; i++) {
+        printf("%d", value[i]);
     }
     printf("\n");
 
-    free(data);
+    free(value);
 }
 
 void print_unsigned_int() {
-    size_t size = get_file_size(NAME);
-    size_t data_size = size / 8 / sizeof(unsigned int);
+    struct Array data = load(NAME, sizeof(unsigned int));
+    size_t count = data.count;
+    int *value = data.value;
 
-    FILE *fp = fopen(NAME, "r");
-    
-    unsigned int *data = load_data(fp, size, sizeof(unsigned int));
-
-    fclose(fp);
-
-    for (size_t i = 0; i < data_size; i++) {
-        printf("%u", data[i]);
+    for (size_t i = 0; i < count; i++) {
+        printf("%u", value[i]);
     }
     printf("\n");
     
-    free(data);
+    free(value);
 }
 
 void print_signed_float() {
-    size_t size = get_file_size(NAME);
-    size_t data_size = size / 8 / sizeof(float);
+    struct Array data = load(NAME, sizeof(float));
+    size_t count = data.count;
+    float *value = data.value;
 
-    FILE *fp = fopen(NAME, "r");
-    
-    float *data = load_data(fp, size, sizeof(float));
-
-    fclose(fp);
-
-    for (size_t i = 0; i < data_size; i++) {
-        printf("%0.4f", data[i]);
+    for (size_t i = 0; i < count; i++) {
+        printf("%0.4f", value[i]);
     }
     printf("\n");
     
-    free(data);
+    free(value);
 }
 
 // ??
 void print_unsigned_float() {
-    size_t size = get_file_size(NAME);
-    size_t data_size = size / 8 / sizeof(float);
+    struct Array data = load(NAME, sizeof(float));
+    size_t count = data.count;
+    float *value = data.value;
 
-    FILE *fp = fopen(NAME, "r");
-    
-    float *data = load_data(fp, size, sizeof(float));
-
-    fclose(fp);
-
-    for (size_t i = 0; i < data_size; i++) {
-        printf("%0.4f", data[i]);
+    for (size_t i = 0; i < count; i++) {
+        printf("%0.4f", value[i]);
     }
     printf("\n");
 
-    free(data);
+    free(value);
 }
 
 void print_signed_double() {
-    size_t size = get_file_size(NAME);
-    size_t data_size = size / 8 / sizeof(double);
+    struct Array data = load(NAME, sizeof(double));
+    size_t count = data.count;
+    double *value = data.value;
 
-    FILE *fp = fopen(NAME, "r");
-    
-    double *data = load_data(fp, size, sizeof(double));
-
-    fclose(fp);
-
-    for (size_t i = 0; i < data_size; i++) {
-        printf("%0.4lf", data[i]);
+    for (size_t i = 0; i < count; i++) {
+        printf("%0.4lf", value[i]);
     }
     printf("\n");
     
-    free(data);
+    free(value);
 }
 
 void print_unsigned_double() {
-    size_t size = get_file_size(NAME);
-    size_t data_size = size / 8 / sizeof(double);
+    struct Array data = load(NAME, sizeof(double));
+    size_t count = data.count;
+    double *value = data.value;
 
-    FILE *fp = fopen(NAME, "r");
-    
-    double *data = load_data(fp, size, sizeof(double));
-
-    fclose(fp);
-
-    for (size_t i = 0; i < data_size; i++) {
-        // ??
-        printf("%0.4lf", data[i]);
+    for (size_t i = 0; i < count; i++) {
+        printf("%0.4lf", value[i]);
     }
     printf("\n");
-
-    free(data);
+    
+    free(value);
 }
 
 int main() {
