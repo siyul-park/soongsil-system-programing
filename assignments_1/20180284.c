@@ -4,7 +4,7 @@
 
 #define NAME "/Users/siyual.park/Project/soongsil/soongsil-system-programing/assignments_1/input"
 
-struct Array {
+struct Data {
     void* value;
     size_t size;
     size_t count;
@@ -22,7 +22,7 @@ size_t get_file_size(char *name) {
     return size;
 }
 
-void load_values(FILE *fp, char *buffer, size_t size) {
+void load_value(FILE *fp, char *buffer, size_t size) {
     size_t str_buffer_size = size * sizeof(char) * 8;
 
     char *str_buffer = calloc(str_buffer_size, sizeof(char));
@@ -47,45 +47,45 @@ void load_values(FILE *fp, char *buffer, size_t size) {
     free(str_buffer);
 }
 
-void *load_data(FILE *fp, size_t size, size_t unit_size) {
+void *load_values(FILE *fp, size_t size, size_t value_size) {
     size_t buffer_size = size / sizeof(char) * 8;
     
     char *buffer = malloc(buffer_size);
-    char *unit_buffer = malloc(unit_size);
+    char *value_buffer = malloc(value_size);
 
     memset(buffer, 0, buffer_size);
 
     char *desk = buffer;
     while (feof(fp) == 0) {
-        memset(unit_buffer, 0, unit_size);
-        load_values(fp, unit_buffer, unit_size);
-        memcpy(desk, unit_buffer, unit_size);
+        memset(value_buffer, 0, value_size);
+        load_value(fp, value_buffer, value_size);
+        memcpy(desk, value_buffer, value_size);
 
-        desk += unit_size;
+        desk += value_size;
     }
 
-    free(unit_buffer);
+    free(value_buffer);
 
     return buffer;
 }
 
-struct Array load(char *name, size_t unit_size) {
-    size_t size = get_file_size(NAME);
-    size_t data_size = size / 8 / unit_size;
+struct Data load(char *name, size_t unit_size) {
+    size_t bit_count = get_file_size(name);
+    size_t count = bit_count / 8 / unit_size;
 
-    FILE *fp = fopen(NAME, "r");
+    FILE *fp = fopen(name, "r");
     
-    void *data = load_data(fp, size, unit_size);
+    void *values = load_values(fp, bit_count, unit_size);
 
     fclose(fp);
     
-    return (struct Array) { .value = data, .size = unit_size, .count = data_size };
+    return (struct Data) { .value = values, .size = unit_size, .count = count };
 }
 
 
-void print_data() {
-    struct Array data = load(NAME, sizeof(char));
-    size_t count = data.count;
+void print_data(size_t size) {
+    struct Data data = load(NAME, size);
+    size_t count = data.count * size;
     char *value = data.value;
 
     char maxPow = (char)(1 << (8-1));
@@ -104,7 +104,7 @@ void print_data() {
 }
 
 void print_signed_char() {
-    struct Array data = load(NAME, sizeof(char));
+    struct Data data = load(NAME, sizeof(char));
     size_t count = data.count;
     char *value = data.value;
 
@@ -117,7 +117,7 @@ void print_signed_char() {
 }
 
 void print_unsigned_char() {
-    struct Array data = load(NAME, sizeof(unsigned char));
+    struct Data data = load(NAME, sizeof(unsigned char));
     size_t count = data.count;
     unsigned char *value = data.value;
 
@@ -130,7 +130,7 @@ void print_unsigned_char() {
 }
 
 void print_ascii() {
-    struct Array data = load(NAME, sizeof(char));
+    struct Data data = load(NAME, sizeof(char));
     size_t count = data.count;
     char *value = data.value;
 
@@ -148,7 +148,7 @@ void print_ascii() {
 }
 
 void print_signed_int() {
-    struct Array data = load(NAME, sizeof(int));
+    struct Data data = load(NAME, sizeof(int));
     size_t count = data.count;
     int *value = data.value;
 
@@ -161,7 +161,7 @@ void print_signed_int() {
 }
 
 void print_unsigned_int() {
-    struct Array data = load(NAME, sizeof(unsigned int));
+    struct Data data = load(NAME, sizeof(unsigned int));
     size_t count = data.count;
     unsigned int *value = data.value;
 
@@ -174,7 +174,7 @@ void print_unsigned_int() {
 }
 
 void print_signed_float() {
-    struct Array data = load(NAME, sizeof(float));
+    struct Data data = load(NAME, sizeof(float));
     size_t count = data.count;
     float *value = data.value;
 
@@ -188,7 +188,7 @@ void print_signed_float() {
 
 // ??
 void print_unsigned_float() {
-    struct Array data = load(NAME, sizeof(float));
+    struct Data data = load(NAME, sizeof(float));
     size_t count = data.count;
     float *value = data.value;
 
@@ -201,7 +201,7 @@ void print_unsigned_float() {
 }
 
 void print_signed_double() {
-    struct Array data = load(NAME, sizeof(double));
+    struct Data data = load(NAME, sizeof(double));
     size_t count = data.count;
     double *value = data.value;
 
@@ -214,7 +214,7 @@ void print_signed_double() {
 }
 
 void print_unsigned_double() {
-    struct Array data = load(NAME, sizeof(double));
+    struct Data data = load(NAME, sizeof(double));
     size_t count = data.count;
     double *value = data.value;
 
@@ -227,7 +227,9 @@ void print_unsigned_double() {
 }
 
 int main() {
-    print_data();
+    print_data(sizeof(char));
+    print_data(sizeof(int));
+    print_data(sizeof(double));
 
     print_signed_char();
     print_ascii();
