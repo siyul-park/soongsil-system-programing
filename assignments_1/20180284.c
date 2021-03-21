@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define NAME "/Users/siyual.park/Project/soongsil/soongsil-system-programing/assignments_1/input"
+#define NAME "./input"
 
 struct Data {
     void* value;
@@ -186,34 +186,7 @@ void print_signed_float() {
     free(value);
 }
 
-// ??
-void print_unsigned_float() {
-    struct Data data = load(NAME, sizeof(float));
-    size_t count = data.count;
-    float *value = data.value;
-
-    for (size_t i = 0; i < count; i++) {
-        printf("%0.4f", value[i]);
-    }
-    printf("\n");
-
-    free(value);
-}
-
 void print_signed_double() {
-    struct Data data = load(NAME, sizeof(double));
-    size_t count = data.count;
-    double *value = data.value;
-
-    for (size_t i = 0; i < count; i++) {
-        printf("%0.4lf", value[i]);
-    }
-    printf("\n");
-    
-    free(value);
-}
-
-void print_unsigned_double() {
     struct Data data = load(NAME, sizeof(double));
     size_t count = data.count;
     double *value = data.value;
@@ -239,10 +212,8 @@ int main() {
     print_unsigned_int();
 
     print_signed_float();
-    print_unsigned_float();
 
     print_signed_double();
-    print_unsigned_double();
 
     return 0;
 }
