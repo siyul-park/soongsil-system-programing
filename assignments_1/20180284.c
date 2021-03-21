@@ -69,23 +69,23 @@ void *load_values(FILE *fp, size_t size, size_t value_size) {
     return buffer;
 }
 
-struct Data load(char *name, size_t unit_size) {
+struct Data load(char *name, size_t value_size) {
     size_t bit_count = get_file_size(name);
-    size_t count = bit_count / 8 / unit_size;
+    size_t count = bit_count / 8 / value_size;
 
     FILE *fp = fopen(name, "r");
     
-    void *values = load_values(fp, bit_count, unit_size);
+    void *values = load_values(fp, bit_count, value_size);
 
     fclose(fp);
     
-    return (struct Data) { .value = values, .size = unit_size, .count = count };
+    return (struct Data) { .value = values, .size = value_size, .count = count };
 }
 
 
 void print_data(size_t size) {
     struct Data data = load(NAME, size);
-    size_t count = data.count * size;
+    size_t count = data.count * data.size;
     char *value = data.value;
 
     char maxPow = (char)(1 << (8-1));
