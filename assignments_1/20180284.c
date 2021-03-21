@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "20180284.h"
+
 #define NAME "./input"
 
 struct Data {
@@ -9,7 +11,6 @@ struct Data {
     size_t size;
     size_t count;
 };
-
 
 size_t get_file_size(char *name) {
     FILE *fp = fopen(name, "r");
@@ -82,34 +83,13 @@ struct Data load(char *name, size_t value_size) {
     return (struct Data) { .value = values, .size = value_size, .count = count };
 }
 
-
-void print_data(size_t size) {
-    struct Data data = load(NAME, size);
-    size_t count = data.count * data.size;
-    char *value = data.value;
-
-    char maxPow = (char)(1 << (8-1));
-
-    for (size_t i = 0; i < count; i++) {
-        char current = value[i];
-        for (size_t j = 0; j < 8; ++j) {
-            printf("%u", current & maxPow ? 1 : 0);
-            current = current << 1;
-        }
-        printf(" ");
-    }
-    printf("\n");
-
-    free(value);
-}
-
 void print_signed_char() {
     struct Data data = load(NAME, sizeof(char));
     size_t count = data.count;
     char *value = data.value;
 
     for (size_t i = 0; i < count; i++) {
-        printf("%d", value[i]);
+        printf("%d ", value[i]);
     }
     printf("\n");
 
@@ -122,7 +102,7 @@ void print_unsigned_char() {
     unsigned char *value = data.value;
 
     for (size_t i = 0; i < count; i++) {
-        printf("%u", value[i]);
+        printf("%u ", value[i]);
     }
     printf("\n");
 
@@ -137,9 +117,9 @@ void print_ascii() {
     for (size_t i = 0; i < count; i++) {
         char current = value[i];
         if (current >= 0 && current <= 127) {
-            printf("%c", value[i]);
+            printf("%c ", value[i]);
         } else {
-            printf(".");
+            printf(". ");
         }
     }
     printf("\n");
@@ -153,7 +133,7 @@ void print_signed_int() {
     int *value = data.value;
 
     for (size_t i = 0; i < count; i++) {
-        printf("%d", value[i]);
+        printf("%d ", value[i]);
     }
     printf("\n");
 
@@ -166,7 +146,7 @@ void print_unsigned_int() {
     unsigned int *value = data.value;
 
     for (size_t i = 0; i < count; i++) {
-        printf("%u", value[i]);
+        printf("%u ", value[i]);
     }
     printf("\n");
     
@@ -179,7 +159,7 @@ void print_signed_float() {
     float *value = data.value;
 
     for (size_t i = 0; i < count; i++) {
-        printf("%0.4f", value[i]);
+        printf("%0.4f ", value[i]);
     }
     printf("\n");
     
@@ -192,7 +172,7 @@ void print_signed_double() {
     double *value = data.value;
 
     for (size_t i = 0; i < count; i++) {
-        printf("%0.4lf", value[i]);
+        printf("%0.4lf ", value[i]);
     }
     printf("\n");
     
@@ -200,10 +180,6 @@ void print_signed_double() {
 }
 
 int main() {
-    print_data(sizeof(char));
-    print_data(sizeof(int));
-    print_data(sizeof(double));
-
     print_signed_char();
     print_ascii();
     print_unsigned_char();
