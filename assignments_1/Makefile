@@ -7,6 +7,7 @@ OBJ = 20180284.o
 	$(CC) -c -o $@ $< $(CFLAGS)
 20180284: $(OBJ) 
 	$(CC) -o $@ $^ $(CFLAGS)
+	rm -rf $^
 
 .PHONY: clean
 clean: 
