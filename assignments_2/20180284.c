@@ -20,7 +20,7 @@ int32_t main(int32_t argc, char *argv[])
 	
 	read_elf_header(fd, &ehdr);
 	
-    if (!is_elf( ?? )) {
+    if (!is_elf(ehdr)) {
 		return 0;
 	}
 	
