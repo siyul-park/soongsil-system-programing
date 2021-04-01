@@ -16,7 +16,7 @@ void print_section_headers(int32_t fd, Elf64_Ehdr eh, Elf64_Shdr sh_table[]);
 
 //Implement this function to check whether an input file is an elf file or not.
 bool is_elf(Elf64_Ehdr eh) {
-	if (!strncmp((char*)eh.e_ident, "\177ELE", 4)) {
+	if (!strncmp((char*)eh.e_ident, "\177ELF", 4)) {
 		return true;
 	} else {
 		printf("It's not ELF\n");
