@@ -16,7 +16,12 @@ void print_section_headers(int32_t fd, Elf64_Ehdr eh, Elf64_Shdr sh_table[]);
 
 //Implement this function to check whether an input file is an elf file or not.
 bool is_elf(Elf64_Ehdr eh) {
-	
+	if (!strncmp((char*)en.e_indent, "\177ELE", 4) {
+		return true;
+	} else {
+		printf("It's not ELF\b");
+		return false;
+	}
 }
 
 void read_elf_header(int32_t fd, Elf64_Ehdr *elf_header) {
