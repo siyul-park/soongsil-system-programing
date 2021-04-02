@@ -16,10 +16,10 @@ void print_section_headers(int32_t fd, Elf64_Ehdr eh, Elf64_Shdr sh_table[]);
 
 //Implement this function to check whether an input file is an elf file or not.
 bool is_elf(Elf64_Ehdr eh) {
-	if (!strncmp((char*)en.e_indent, "\177ELE", 4) {
+	if (!strncmp((char*)eh.e_ident, "\177ELF", 4)) {
 		return true;
 	} else {
-		printf("It's not ELF\b");
+		printf("It's not ELF\n");
 		return false;
 	}
 }
@@ -199,12 +199,118 @@ void print_section_headers(int32_t fd, Elf64_Ehdr eh, Elf64_Shdr sh_table[]) {
 	sh_str = read_section(fd, sh_table[eh.e_shstrndx]);
 
 	for (i = 0; i < eh.e_shnum; i++) {
-		if (!strncmp((sh_str + sh_table[i].sh_name), ".rodata", 7))
-		{
+		if (!strncmp((sh_str + sh_table[i].sh_name), ".rodata", 7)) {
 			printf("%s section info\n", (sh_str + sh_table[i].sh_name));
 			printf("    file offset = 0x%08lx\n", sh_table[i].sh_offset);
 			printf("           size = 0x%08lx\n", sh_table[i].sh_size);
 		}
 	}
 
+  free(sh_str);
 }
+
+size_t read_rodata_offset(int32_t fd, Elf64_Ehdr eh, Elf64_Shdr sh_table[]) {
+  char* sh_str = read_section(fd, sh_table[eh.e_shstrndx]);
+
+  size_t offset = 0;
+	for (size_t i = 0; i < eh.e_shnum; i++) {
+		if (!strncmp((sh_str + sh_table[i].sh_name), ".rodata", 7)) {
+      offset = sh_table[i].sh_offset;
+		}
+	}
+
+  free(sh_str);
+
+  return offset;
+}
+
+size_t read_rodata_size(int32_t fd, Elf64_Ehdr eh, Elf64_Shdr sh_table[]) {
+  char* sh_str = read_section(fd, sh_table[eh.e_shstrndx]);
+
+  size_t size = 0;
+	for (size_t i = 0; i < eh.e_shnum; i++) {
+		if (!strncmp((sh_str + sh_table[i].sh_name), ".rodata", 7)) {
+      size = sh_table[i].sh_size;
+		}
+	}
+
+  free(sh_str);
+
+  return size;
+}
+
+char *read_rodata(int32_t fd, Elf64_Ehdr eh, Elf64_Shdr sh_table[]) {
+  size_t offset = read_rodata_offset(fd, eh, sh_table);
+  size_t size = read_rodata_size(fd, eh, sh_table);
+
+	assert(offset != 0 && size != 0);
+
+  char* buff = malloc(size);
+
+  assert(lseek(fd, (off_t)offset, SEEK_SET) == (off_t)offset);
+	assert(read(fd, (void *)buff, size) == size);
+
+	return buff;
+}
+
+void write_rodata(
+  int32_t fd, 
+  Elf64_Ehdr eh, 
+  Elf64_Shdr sh_table[],
+  char *buff
+) {
+	size_t offset = read_rodata_offset(fd, eh, sh_table);
+  size_t size = read_rodata_size(fd, eh, sh_table);
+
+	assert(offset != 0 && size != 0);
+
+  assert(lseek(fd, (off_t)offset, SEEK_SET) == (off_t)offset);
+	assert(write(fd, (void *)buff, size) == size);
+}
+
+void str_replace(char *origin, size_t size, char *source, char *target) {
+    size_t source_length = strlen(source);
+    size_t target_length = strlen(target);
+
+	  assert(source_length == target_length);
+    
+    size_t correct = 0;
+    size_t i;
+    for (i = 0; i < size; i++) {
+      if (origin[i] == source[correct]) {
+        correct++;
+      } else {
+        correct = 0;
+      }
+      if (correct == source_length) {
+        break;
+      }
+    }
+    
+    assert(correct == source_length);
+
+    if (correct == source_length) {
+      i -= correct - 1;
+      for (size_t j = 0; j < target_length; j++) {
+        origin[i + j] = target[j];
+      }
+    }
+}
+
+void change_rodata(
+  int32_t fd, 
+  Elf64_Ehdr eh, 
+  Elf64_Shdr sh_table[],
+  char *source,
+  char *target
+) {
+	char *rodata = read_rodata(fd, eh, sh_table);
+  size_t size = read_rodata_size(fd, eh, sh_table);
+
+  str_replace(rodata, size, source, target);
+
+  write_rodata(fd, eh, sh_table, rodata);
+
+  free(rodata);
+}
+

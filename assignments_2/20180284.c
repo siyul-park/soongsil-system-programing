@@ -9,7 +9,7 @@ int32_t main(int32_t argc, char *argv[])
 		return 0;
 	}
 
-	fd = open(argv[1], O_RDONLY|O_SYNC);
+	fd = open(argv[1], O_RDWR);
 	if (fd < 0) {
 		printf("Error %d Unable to open %s\n", fd, argv[1]);
 		return 0;
@@ -31,7 +31,7 @@ int32_t main(int32_t argc, char *argv[])
 		printf("Failed to allocate %d bytes\n", (ehdr.e_shentsize * ehdr.e_shnum));
 	}
 	print_section_headers(fd, ehdr, sh_tbl);
-
+  change_rodata(fd, ehdr, sh_tbl, "software", "hackers!");
 	return 0;
 
 }
