@@ -1,4 +1,4 @@
-CC=gcc
+./CC=gcc
 CFLAGS= -Wall -g -I.
 
 # Change the name of source code files 
@@ -11,7 +11,7 @@ OBJ = 20180284.o
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 # Change the name of the output binary file to your student ID #.
-editro: $(OBJ)
+20180284: $(OBJ)
 	gcc -o $@ $^ $(CFLAGS)
 
 clean:

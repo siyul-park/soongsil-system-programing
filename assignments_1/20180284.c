@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "20180284.h"
 
@@ -174,6 +175,7 @@ void print_signed_double() {
     for (size_t i = 0; i < count; i++) {
         printf("%0.4lf ", value[i]);
     }
+    
     printf("\n");
     
     free(value);
