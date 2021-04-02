@@ -304,7 +304,7 @@ void change_rodata(
   char *target
 ) {
 	char *rodata = read_rodata(fd, eh, sh_table);
-  size_t size = read_rodata_size(fd, eh, sh_table);
+	size_t size = read_rodata_size(fd, eh, sh_table);
 
 	str_replace(rodata, size, source, target);
 	write_rodata(fd, eh, sh_table, rodata);
