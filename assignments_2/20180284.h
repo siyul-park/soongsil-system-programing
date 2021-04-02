@@ -250,15 +250,6 @@ char *read_rodata(int32_t fd, Elf64_Ehdr eh, Elf64_Shdr sh_table[]) {
 	assert(lseek(fd, (off_t)offset, SEEK_SET) == (off_t)offset);
 	assert(read(fd, (void *)buff, size) == size);
 
-  for (size_t i = 0; i < size; i++) {
-    if (buff[i] > 0 && buff[i] < 127) {
-      printf("%c", buff[i]);
-    } else {
-      printf(".");
-    }
-  }
-  printf("\n");
-
 	return buff;
 }
 
@@ -270,15 +261,6 @@ void write_rodata(
 ) {
 	size_t offset = read_rodata_offset(fd, eh, sh_table);
 	size_t size = read_rodata_size(fd, eh, sh_table);
-
-  for (size_t i = 0; i < size; i++) {
-    if (buff[i] > 0 && buff[i] < 127) {
-      printf("%c", buff[i]);
-    } else {
-      printf(".");
-    }
-  }
-  printf("\n");
 
 	assert(offset != 0 && size != 0);
 
