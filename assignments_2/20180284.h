@@ -250,6 +250,15 @@ char *read_rodata(int32_t fd, Elf64_Ehdr eh, Elf64_Shdr sh_table[]) {
 	assert(lseek(fd, (off_t)offset, SEEK_SET) == (off_t)offset);
 	assert(read(fd, (void *)buff, size) == size);
 
+  for (size_t i = 0; i < size; i++) {
+    if (buff[i] > 0 && buff[i] < 127) {
+      printf("%c", buff[i]);
+    } else {
+      printf(".");
+    }
+  }
+  printf("\n");
+
 	return buff;
 }
 
@@ -262,6 +271,15 @@ void write_rodata(
 	size_t offset = read_rodata_offset(fd, eh, sh_table);
 	size_t size = read_rodata_size(fd, eh, sh_table);
 
+  for (size_t i = 0; i < size; i++) {
+    if (buff[i] > 0 && buff[i] < 127) {
+      printf("%c", buff[i]);
+    } else {
+      printf(".");
+    }
+  }
+  printf("\n");
+
 	assert(offset != 0 && size != 0);
 
 	assert(lseek(fd, (off_t)offset, SEEK_SET) == (off_t)offset);
@@ -269,32 +287,31 @@ void write_rodata(
 }
 
 void str_replace(char *origin, size_t size, char *source, char *target) {
-    size_t source_length = strlen(source);
-    size_t target_length = strlen(target);
+  size_t source_length = strlen(source);
+  size_t target_length = strlen(target);
 
-	assert(source_length == target_length);
+  assert(source_length == target_length);
     
-    size_t correct = 0;
-    size_t i;
-    for (i = 0; i < size; i++) {
-		if (origin[i] == source[correct]) {
-    		correct++;
-    	} else {
-    		correct = 0;
-		}
-    	if (correct == source_length) {
-    		break;
-    	}
+  size_t correct = 0;
+  size_t i;
+  for (i = 0; i < size; i++) {
+    if (origin[i] == source[correct]) {
+      correct++;
+    } else {
+      i -= correct;
+      correct = 0;
     }
-    
-    assert(correct == source_length);
-
     if (correct == source_length) {
-      i -= correct - 1;
-      for (size_t j = 0; j < target_length; j++) {
-        origin[i + j] = target[j];
-      }
+      break;
     }
+  }
+
+  if (correct == source_length) {
+    i -= correct - 1;
+    for (size_t j = 0; j < target_length; j++) {
+      origin[i + j] = target[j];
+    }
+  }
 }
 
 void change_rodata(
@@ -305,8 +322,8 @@ void change_rodata(
   char *target
 ) {
 	char *rodata = read_rodata(fd, eh, sh_table);
-	size_t size = read_rodata_size(fd, eh, sh_table);
-	
+  size_t size = read_rodata_size(fd, eh, sh_table);
+
 	str_replace(rodata, size, source, target);
 	write_rodata(fd, eh, sh_table, rodata);
 	
