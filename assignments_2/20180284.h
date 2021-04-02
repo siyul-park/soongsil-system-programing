@@ -206,48 +206,48 @@ void print_section_headers(int32_t fd, Elf64_Ehdr eh, Elf64_Shdr sh_table[]) {
 		}
 	}
 
-  free(sh_str);
+  	free(sh_str);
 }
 
 size_t read_rodata_offset(int32_t fd, Elf64_Ehdr eh, Elf64_Shdr sh_table[]) {
-  char* sh_str = read_section(fd, sh_table[eh.e_shstrndx]);
+	char* sh_str = read_section(fd, sh_table[eh.e_shstrndx]);
 
-  size_t offset = 0;
+	size_t offset = 0;
 	for (size_t i = 0; i < eh.e_shnum; i++) {
 		if (!strncmp((sh_str + sh_table[i].sh_name), ".rodata", 7)) {
-      offset = sh_table[i].sh_offset;
+			offset = sh_table[i].sh_offset;
 		}
 	}
 
-  free(sh_str);
+	free(sh_str);
 
-  return offset;
+	return offset;
 }
 
 size_t read_rodata_size(int32_t fd, Elf64_Ehdr eh, Elf64_Shdr sh_table[]) {
-  char* sh_str = read_section(fd, sh_table[eh.e_shstrndx]);
+	char* sh_str = read_section(fd, sh_table[eh.e_shstrndx]);
 
-  size_t size = 0;
+	size_t size = 0;
 	for (size_t i = 0; i < eh.e_shnum; i++) {
 		if (!strncmp((sh_str + sh_table[i].sh_name), ".rodata", 7)) {
-      size = sh_table[i].sh_size;
+			size = sh_table[i].sh_size;
 		}
 	}
 
-  free(sh_str);
+	free(sh_str);
 
-  return size;
+	return size;
 }
 
 char *read_rodata(int32_t fd, Elf64_Ehdr eh, Elf64_Shdr sh_table[]) {
-  size_t offset = read_rodata_offset(fd, eh, sh_table);
-  size_t size = read_rodata_size(fd, eh, sh_table);
+	size_t offset = read_rodata_offset(fd, eh, sh_table);
+	size_t size = read_rodata_size(fd, eh, sh_table);
 
 	assert(offset != 0 && size != 0);
 
-  char* buff = malloc(size);
+	char* buff = malloc(size);
 
-  assert(lseek(fd, (off_t)offset, SEEK_SET) == (off_t)offset);
+	assert(lseek(fd, (off_t)offset, SEEK_SET) == (off_t)offset);
 	assert(read(fd, (void *)buff, size) == size);
 
 	return buff;
@@ -260,11 +260,11 @@ void write_rodata(
   char *buff
 ) {
 	size_t offset = read_rodata_offset(fd, eh, sh_table);
-  size_t size = read_rodata_size(fd, eh, sh_table);
+	size_t size = read_rodata_size(fd, eh, sh_table);
 
 	assert(offset != 0 && size != 0);
 
-  assert(lseek(fd, (off_t)offset, SEEK_SET) == (off_t)offset);
+	assert(lseek(fd, (off_t)offset, SEEK_SET) == (off_t)offset);
 	assert(write(fd, (void *)buff, size) == size);
 }
 
@@ -272,19 +272,19 @@ void str_replace(char *origin, size_t size, char *source, char *target) {
     size_t source_length = strlen(source);
     size_t target_length = strlen(target);
 
-	  assert(source_length == target_length);
+	assert(source_length == target_length);
     
     size_t correct = 0;
     size_t i;
     for (i = 0; i < size; i++) {
-      if (origin[i] == source[correct]) {
-        correct++;
-      } else {
-        correct = 0;
-      }
-      if (correct == source_length) {
-        break;
-      }
+		if (origin[i] == source[correct]) {
+    		correct++;
+    	} else {
+    		correct = 0;
+		}
+    	if (correct == source_length) {
+    		break;
+    	}
     }
     
     assert(correct == source_length);
@@ -305,12 +305,11 @@ void change_rodata(
   char *target
 ) {
 	char *rodata = read_rodata(fd, eh, sh_table);
-  size_t size = read_rodata_size(fd, eh, sh_table);
-
-  str_replace(rodata, size, source, target);
-
-  write_rodata(fd, eh, sh_table, rodata);
-
-  free(rodata);
+	size_t size = read_rodata_size(fd, eh, sh_table);
+	
+	str_replace(rodata, size, source, target);
+	write_rodata(fd, eh, sh_table, rodata);
+	
+	free(rodata);
 }
 
