@@ -31,7 +31,7 @@ int32_t main(int32_t argc, char *argv[])
 		printf("Failed to allocate %d bytes\n", (ehdr.e_shentsize * ehdr.e_shnum));
 	}
 	print_section_headers(fd, ehdr, sh_tbl);
-  change_rodata(fd, ehdr, sh_tbl, "software", "hackers!");
+	change_rodata(fd, ehdr, sh_tbl, "software", "hackers!");
 	return 0;
 
 }

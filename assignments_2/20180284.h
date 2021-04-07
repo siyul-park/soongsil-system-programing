@@ -269,31 +269,28 @@ void write_rodata(
 }
 
 void str_replace(char *origin, size_t size, char *source, char *target) {
-  size_t source_length = strlen(source);
-  size_t target_length = strlen(target);
+	size_t source_length = strlen(source);
+	size_t target_length = strlen(target);
 
-  assert(source_length == target_length);
+	assert(source_length == target_length);
     
-  size_t correct = 0;
-  size_t i;
-  for (i = 0; i < size; i++) {
-    if (origin[i] == source[correct]) {
-      correct++;
-    } else {
-      i -= correct;
-      correct = 0;
-    }
-    if (correct == source_length) {
-      break;
-    }
-  }
+	size_t correct = 0;
+	for (size_t i = 0; i < size; i++) {
+		if (origin[i] == source[correct]) {
+			correct++;
+		} else {
+			i -= correct;
+			correct = 0;
+		}
+		if (correct == source_length) {
+			size_t start_index = i - correct + 1;
+			correct = 0;
 
-  if (correct == source_length) {
-    i -= correct - 1;
-    for (size_t j = 0; j < target_length; j++) {
-      origin[i + j] = target[j];
-    }
-  }
+			for (size_t j = 0; j < target_length; j++) {
+				origin[start_index + j] = target[j];
+			}
+		}
+	}
 }
 
 void change_rodata(
