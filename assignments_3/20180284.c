@@ -93,7 +93,7 @@ void process_read_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current, 
 	size_t length = 0;
 
 	if (getline(&line, &length, fp) == -1) {
-		printf("%d process_read_line", current);
+		printf("%d process_read_line\n", current);
 		send_exit_prepare_event(pipes, current, run);
 		return;
 	}
@@ -117,7 +117,7 @@ void process_pass_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current, 
 	size_t length = 0;
 
 	if (getline(&line, &length, fp) == -1) {
-		printf("%d process_pass_line", current);
+		printf("%d process_pass_line\n", current);
 		send_exit_prepare_event(pipes, current, run);
 		return;
 	}
