@@ -85,7 +85,7 @@ void send_exit_prepare_event(int pipes[MAX_PROCESS_COUNT][2], int current, int *
 	}
 }
 
-void process_read_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current) 
+void process_read_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current, int *run) 
 {
 	int next = get_next_index(current, MAX_PROCESS_COUNT);
 	pid_t pid = getpid();
@@ -94,7 +94,8 @@ void process_read_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current)
 	size_t length = 0;
 
 	if (getline(&line, &length, fp) == -1) {
-		write(pipes[next][WRITE], exit_prepare_event, BUFFER_SIZE);
+		printf("%d Read all data", pid);
+		send_exit_prepare_event(pipes, current, run);
 		return;
 	}
 
@@ -106,7 +107,7 @@ void process_read_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current)
 	send_read_event(pipes, current);
 }
 
-void process_pass_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current) 
+void process_pass_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current, int *run) 
 {
 	int next = get_next_index(current, MAX_PROCESS_COUNT);
 
@@ -114,7 +115,7 @@ void process_pass_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current)
 	size_t length = 0;
 
 	if (getline(&line, &length, fp) == -1) {
-		write(pipes[next][WRITE], exit_prepare_event, BUFFER_SIZE);
+		send_exit_prepare_event(pipes, current, run);
 		return;
 	}
 
@@ -164,9 +165,9 @@ int main(int argc, char * argv[])
 		read(pipes[current][READ], buffer, BUFFER_SIZE);
 
 		if (strcmp(buffer, read_event) == 0) {
-			process_read_line(fp, pipes, current);
+			process_read_line(fp, pipes, current, &run);
 		} else if (strcmp(buffer, pass_event) == 0) {
-			process_pass_line(fp, pipes, current);
+			process_pass_line(fp, pipes, current, &run);
    		} else if (strcmp(buffer, exit_prepare_event) == 0) {
 			process_exit_prepare(pipes, current, &run);
 		} else if (strcmp(buffer, exit_event) == 0) {
