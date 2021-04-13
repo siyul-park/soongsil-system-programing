@@ -168,18 +168,18 @@ int main(int argc, char * argv[])
 		} else if (strcmp(buffer, pass_event) == 0) {
 			process_pass_line(fp, pipes, current);
    		} else if (strcmp(buffer, exit_prepare_event) == 0) {
-			process_exit_prepare(pipes, current, run);
+			process_exit_prepare(pipes, current, &run);
 		} else if (strcmp(buffer, exit_event) == 0) {
-			process_exit(pipes, current, run);
+			process_exit(pipes, current, &run);
 		} else {
-			send_exit_prepare_event(pipes, current, run);
+			send_exit_prepare_event(pipes, current, &run);
 		}
 	}
 
 	if (current == 0) {
 		for (int i = 0; i < MAX_PROCESS_COUNT; i++) {
-			fclose(pipes[i][READ]);
-			fclose(pipes[i][WRITE]);
+			close(pipes[i][READ]);
+			close(pipes[i][WRITE]);
 		}
 	}
 
