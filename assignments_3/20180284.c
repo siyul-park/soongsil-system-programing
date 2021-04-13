@@ -155,14 +155,13 @@ int main(int argc, char * argv[])
 		return 0;
 	}
 
-	if (current == 0) {
-		int next = get_next_index(current, MAX_PROCESS_COUNT);
-		write(pipes[next][WRITE], read_event, BUFFER_SIZE);
-	}
-
 	char buffer[BUFFER_SIZE] = {};
 
 	int run = 1;
+
+	if (current == 0) {
+		process_read_line(fp, pipes, current, &run);
+	}
 	while (run) {
 		memset(buffer, 0, BUFFER_SIZE);
 		read(pipes[current][READ], buffer, BUFFER_SIZE);
