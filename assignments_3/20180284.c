@@ -78,8 +78,8 @@ void send_pass_event(int pipes[MAX_PROCESS_COUNT][2], int current, int pass_proc
 
 void send_exit_event(int pipes[MAX_PROCESS_COUNT][2], int current) 
 {
-	if (current != 0) {
-		int prev = get_prev_index(current, MAX_PROCESS_COUNT);
+	int prev = get_prev_index(current, MAX_PROCESS_COUNT);
+	if (prev < current) {
 		write(pipes[prev][WRITE], exit_event, BUFFER_SIZE);
 	}
 }
@@ -96,10 +96,10 @@ void process_exit(int pipes[MAX_PROCESS_COUNT][2], int current, int *run)
 
 void send_exit_prepare_event(int pipes[MAX_PROCESS_COUNT][2], int current, int *run) 
 {
-	if (current != MAX_PROCESS_COUNT - 1) {
-		int next = get_next_index(current, MAX_PROCESS_COUNT);
+	int next = get_next_index(current, MAX_PROCESS_COUNT);
+	if (next > current) {
 		write(pipes[next][WRITE], exit_prepare_event, BUFFER_SIZE);
-	} else {
+	}  else {
 		process_exit(pipes, current, run);
 	}
 }
