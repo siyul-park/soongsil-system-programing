@@ -77,8 +77,6 @@ void process_exit(int pipes[MAX_PROCESS_COUNT][2], int current, int *run)
 
 void send_exit_prepare_event(int pipes[MAX_PROCESS_COUNT][2], int current, int *run) 
 {
-	printf("send_exit_prepare_event %d\n", current);
-
 	if (current != MAX_PROCESS_COUNT - 1) {
 		int next = get_next_index(current, MAX_PROCESS_COUNT);
 		write(pipes[next][WRITE], exit_prepare_event, BUFFER_SIZE);
@@ -95,6 +93,7 @@ void process_read_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current, 
 	size_t length = 0;
 
 	if (getline(&line, &length, fp) == -1) {
+		printf("%d process_read_line", current);
 		send_exit_prepare_event(pipes, current, run);
 		return;
 	}
@@ -118,6 +117,7 @@ void process_pass_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current, 
 	size_t length = 0;
 
 	if (getline(&line, &length, fp) == -1) {
+		printf("%d process_pass_line", current);
 		send_exit_prepare_event(pipes, current, run);
 		return;
 	}
