@@ -128,7 +128,7 @@ void process_pass_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current)
 
 void process_exit_prepare(int pipes[MAX_PROCESS_COUNT][2], int current, int *run) 
 {
-	send_exit_prepare_event(pipes, current);
+	send_exit_prepare_event(pipes, current, run);
 }
 
 int main(int argc, char * argv[]) 
