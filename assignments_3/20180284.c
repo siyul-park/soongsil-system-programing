@@ -196,9 +196,9 @@ int main(int argc, char * argv[])
 			process_exit_prepare(pipes, current, &run);
 		} else if (strcmp(buffer, exit_event) == 0) {
 			process_exit(pipes, current, &run);
-		} else {
-			send_exit_prepare_event(pipes, current, &run);
 		}
+
+    usleep(1 * 1000);
 	}
 
 	if (current == 0) {
