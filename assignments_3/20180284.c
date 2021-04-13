@@ -34,14 +34,26 @@ int create_process(size_t size)
 	return current;
 }
 
+int nomalize_index(int index, size_t size)
+{
+	if (index < 0) {
+		return index + size;
+	} 
+	if (index >= size) {
+		return index - size;
+	}
+
+	return index;
+}
+
 int get_next_index(int current, size_t size) 
 {
-	return current + 1 - ((current + 1) / size * size);
+	return nomalize_index(current + 1, size);
 }
 
 int get_prev_index(int current, size_t size) 
 {
-	return current - 1;
+	return nomalize_index(current - 1, size);
 }
 
 
@@ -51,7 +63,7 @@ void send_read_event(int pipes[MAX_PROCESS_COUNT][2], int current)
 	write(pipes[next][WRITE], read_event, BUFFER_SIZE);
 }
 
-void send_exit_read_all_data(int pipes[MAX_PROCESS_COUNT][2], int current) 
+void send_read_all_event(int pipes[MAX_PROCESS_COUNT][2], int current) 
 {
 	int prev = get_prev_index(current, MAX_PROCESS_COUNT);
 	write(pipes[prev][WRITE], read_all_event, BUFFER_SIZE);
@@ -100,7 +112,7 @@ void process_read_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current)
 	size_t length = 0;
 
 	if (getline(&line, &length, fp) == -1) {
-		send_exit_read_all_data(pipes, current);
+		send_read_all_event(pipes, current);
 		return;
 	}
 
@@ -126,7 +138,7 @@ void process_pass_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current)
 	size_t length = 0;
 
 	if (getline(&line, &length, fp) == -1) {
-		send_exit_read_all_data(pipes, current);
+		send_read_all_event(pipes, current);
 		return;
 	}
 
