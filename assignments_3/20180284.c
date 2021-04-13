@@ -77,7 +77,7 @@ void process_exit(int pipes[MAX_PROCESS_COUNT][2], int current, int *run)
 
 void send_exit_prepare_event(int pipes[MAX_PROCESS_COUNT][2], int current, int *run) 
 {
-	printf("send_exit_prepare_event %d", current);
+	printf("send_exit_prepare_event %d\n", current);
 
 	if (current != MAX_PROCESS_COUNT - 1) {
 		int next = get_next_index(current, MAX_PROCESS_COUNT);
