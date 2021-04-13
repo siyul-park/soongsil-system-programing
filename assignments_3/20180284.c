@@ -128,7 +128,7 @@ void process_read_all(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current, i
 {
 	pid_t pid = getpid();
 
-	printf("%d Read all data", pid);
+	printf("%d Read all data\n", pid);
 	send_exit_prepare_event(pipes, current, run);
 }
 
