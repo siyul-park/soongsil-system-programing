@@ -65,23 +65,23 @@ void send_exit_event(int pipes[MAX_PROCESS_COUNT][2], int current)
 	}
 }
 
-void process_exit(int pipes[MAX_PROCESS_COUNT][2], int current) 
+void process_exit(int pipes[MAX_PROCESS_COUNT][2], int current, int *run) 
 {
 	pid_t pid = getpid();
 
 	printf("%d I’m exiting...\n", pid);
 
 	send_exit_event(pipes, current);
-	exit(0);
+	*run = 0;
 }
 
-void send_exit_prepare_event(int pipes[MAX_PROCESS_COUNT][2], int current) 
+void send_exit_prepare_event(int pipes[MAX_PROCESS_COUNT][2], int current, int *run) 
 {
 	if (current != MAX_PROCESS_COUNT - 1) {
 		int next = get_next_index(current, MAX_PROCESS_COUNT);
 		write(pipes[next][WRITE], exit_prepare_event, BUFFER_SIZE);
 	} else {
-		process_exit(pipes, current);
+		process_exit(pipes, current, run);
 	}
 }
 
@@ -126,7 +126,7 @@ void process_pass_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current)
 	}
 }
 
-void process_exit_prepare(int pipes[MAX_PROCESS_COUNT][2], int current) 
+void process_exit_prepare(int pipes[MAX_PROCESS_COUNT][2], int current, int *run) 
 {
 	send_exit_prepare_event(pipes, current);
 }
@@ -144,8 +144,6 @@ int main(int argc, char * argv[])
 	}
 
 	int current = create_process(MAX_PROCESS_COUNT - 1);
-	int next = get_next_index(current, MAX_PROCESS_COUNT);
-	assert(current != next);
 
 	FILE * fp = fopen(argv[1], "r");
 	if (fp == NULL) {
@@ -153,13 +151,15 @@ int main(int argc, char * argv[])
 		return 0;
 	}
 
-	char buffer[BUFFER_SIZE] = {};
-
 	if (current == 0) {
+		int next = get_next_index(current, MAX_PROCESS_COUNT);
 		write(pipes[next][WRITE], read_event, BUFFER_SIZE);
 	}
 
-	while (1) {
+	char buffer[BUFFER_SIZE] = {};
+
+	int run = 1;
+	while (run) {
 		memset(buffer, 0, BUFFER_SIZE);
 		read(pipes[current][READ], buffer, BUFFER_SIZE);
 
@@ -167,13 +167,19 @@ int main(int argc, char * argv[])
 			process_read_line(fp, pipes, current);
 		} else if (strcmp(buffer, pass_event) == 0) {
 			process_pass_line(fp, pipes, current);
-    	} else if (strcmp(buffer, exit_prepare_event) == 0) {
-			process_exit_prepare(pipes, current);
+   		} else if (strcmp(buffer, exit_prepare_event) == 0) {
+			process_exit_prepare(pipes, current, run);
 		} else if (strcmp(buffer, exit_event) == 0) {
-			process_exit(pipes, current);
+			process_exit(pipes, current, run);
 		} else {
-			send_exit_prepare_event(pipes, current);
-			break;
+			send_exit_prepare_event(pipes, current, run);
+		}
+	}
+
+	if (current == 0) {
+		for (int i = 0; i < MAX_PROCESS_COUNT; i++) {
+			fclose(pipes[i][READ]);
+			fclose(pipes[i][WRITE]);
 		}
 	}
 
