@@ -1,11 +1,7 @@
 #include <stdlib.h>
-
 #include <stdio.h>
-
 #include <unistd.h>
-
 #include <assert.h>
-
 #include <string.h>
 
 #include "20180284.h"
@@ -89,7 +85,7 @@ void send_exit_prepare_event(int pipes[MAX_PROCESS_COUNT][2], int current)
 	}
 }
 
-int process_read_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current) 
+void process_read_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current) 
 {
 	int next = get_next_index(current, MAX_PROCESS_COUNT);
 	pid_t pid = getpid();
@@ -99,7 +95,7 @@ int process_read_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current)
 
 	if (getline(&line, &length, fp) == -1) {
 		write(pipes[next][WRITE], exit_prepare_event, BUFFER_SIZE);
-		return 0;
+		return;
 	}
 
 	printf("%d %s", pid, line);
@@ -108,11 +104,9 @@ int process_read_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current)
 
 	send_pass_event(pipes, current, MAX_PROCESS_COUNT - 1);
 	send_read_event(pipes, current);
-
-	return 1;
 }
 
-int process_pass_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current) 
+void process_pass_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current) 
 {
 	int next = get_next_index(current, MAX_PROCESS_COUNT);
 
@@ -121,7 +115,7 @@ int process_pass_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current)
 
 	if (getline(&line, &length, fp) == -1) {
 		write(pipes[next][WRITE], exit_prepare_event, BUFFER_SIZE);
-		return 0;
+		return;
 	}
 
 	int pass_proccess_size;
@@ -130,8 +124,6 @@ int process_pass_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current)
 	if (--pass_proccess_size > 0) {
 		send_pass_event(pipes, current, pass_proccess_size);
 	}
-
-	return 1;
 }
 
 void process_exit_prepare(int pipes[MAX_PROCESS_COUNT][2], int current) 
@@ -175,7 +167,7 @@ int main(int argc, char * argv[])
 			process_read_line(fp, pipes, current);
 		} else if (strcmp(buffer, pass_event) == 0) {
 			process_pass_line(fp, pipes, current);
-    } else if (strcmp(buffer, exit_prepare_event) == 0) {
+    	} else if (strcmp(buffer, exit_prepare_event) == 0) {
 			process_exit_prepare(pipes, current);
 		} else if (strcmp(buffer, exit_event) == 0) {
 			process_exit(pipes, current);
