@@ -177,7 +177,7 @@ int main(int argc, char * argv[])
 		if (strcmp(buffer, read_event) == 0) {
 			process_read_line(fp, pipes, current);
 		} else if (strcmp(buffer, read_all_event) == 0) {
-			process_read_all(pipes, current, &run);
+			process_read_all(fp, pipes, current, &run);
 		} else if (strcmp(buffer, pass_event) == 0) {
 			process_pass_line(fp, pipes, current);
    		} else if (strcmp(buffer, exit_prepare_event) == 0) {
