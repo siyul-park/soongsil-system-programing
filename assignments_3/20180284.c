@@ -125,7 +125,7 @@ void process_read_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current, 
 		process_read_all(fp, pipes, current, run);
 		return;
 	}
-	fseek(fp, last_pos, SEEK_SET);	
+	fseek(fp, last_pos, SEEK_SET);
 
 	free(line);
 
