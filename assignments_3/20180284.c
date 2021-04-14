@@ -12,7 +12,6 @@
 #define WRITE 1
 
 char read_event[BUFFER_SIZE] = "event:read";
-char read_all_event[BUFFER_SIZE] = "event:read_all";
 char pass_event[BUFFER_SIZE] = "event:pass";
 char exit_prepare_event[BUFFER_SIZE] = "event:exit_prepare";
 char exit_event[BUFFER_SIZE] = "event:exit";
@@ -63,12 +62,6 @@ void send_read_event(int pipes[MAX_PROCESS_COUNT][2], int current)
 	write(pipes[next][WRITE], read_event, BUFFER_SIZE);
 }
 
-void send_read_all_event(int pipes[MAX_PROCESS_COUNT][2], int current) 
-{
-	int prev = get_prev_index(current, MAX_PROCESS_COUNT);
-	write(pipes[prev][WRITE], read_all_event, BUFFER_SIZE);
-}
-
 void send_pass_event(int pipes[MAX_PROCESS_COUNT][2], int current, int pass_proccess_size) 
 {
 	int next = get_next_index(current, MAX_PROCESS_COUNT);
@@ -104,26 +97,6 @@ void send_exit_prepare_event(int pipes[MAX_PROCESS_COUNT][2], int current, int *
 	}
 }
 
-void process_read_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current) 
-{
-	pid_t pid = getpid();
-
-	char *line = NULL;
-	size_t length = 0;
-
-	if (getline(&line, &length, fp) == -1) {
-		send_read_all_event(pipes, current);
-		return;
-	}
-
-	printf("%d %s", pid, line);
-
-	free(line);
-
-	send_pass_event(pipes, current, MAX_PROCESS_COUNT - 1);
-	send_read_event(pipes, current);
-}
-
 void process_read_all(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current, int *run) 
 {
 	pid_t pid = getpid();
@@ -132,13 +105,40 @@ void process_read_all(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current, i
 	send_exit_prepare_event(pipes, current, run);
 }
 
+void process_read_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current, int *run) 
+{
+	pid_t pid = getpid();
+
+	char *line = NULL;
+	size_t length = 0;
+
+	if (getline(&line, &length, fp) == -1) {
+		process_read_all(fp, pipes, current, run);
+		return;
+	}
+
+	printf("%d %s", pid, line);
+
+	// Check is end
+	int last_pos = ftell(fp);
+	if (getline(&line, &length, fp) == -1) {
+		process_read_all(fp, pipes, current, run);
+		return;
+	}
+	fseek(fp, last_pos, SEEK_SET);	
+
+	free(line);
+
+	send_pass_event(pipes, current, MAX_PROCESS_COUNT - 1);
+	send_read_event(pipes, current);
+}
+
 void process_pass_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current) 
 {
 	char * line = NULL;
 	size_t length = 0;
 
 	if (getline(&line, &length, fp) == -1) {
-		send_read_all_event(pipes, current);
 		return;
 	}
 
@@ -180,25 +180,23 @@ int main(int argc, char * argv[])
 	int run = 1;
 
 	if (current == 0) {
-		process_read_line(fp, pipes, current);
+		process_read_line(fp, pipes, current, &run);
 	}
 	while (run) {
 		memset(buffer, 0, BUFFER_SIZE);
 		read(pipes[current][READ], buffer, BUFFER_SIZE);
 
 		if (strcmp(buffer, read_event) == 0) {
-			process_read_line(fp, pipes, current);
-		} else if (strcmp(buffer, read_all_event) == 0) {
-			process_read_all(fp, pipes, current, &run);
+			process_read_line(fp, pipes, current, &run);
 		} else if (strcmp(buffer, pass_event) == 0) {
 			process_pass_line(fp, pipes, current);
    		} else if (strcmp(buffer, exit_prepare_event) == 0) {
 			process_exit_prepare(pipes, current, &run);
 		} else if (strcmp(buffer, exit_event) == 0) {
 			process_exit(pipes, current, &run);
+		} else {
+			send_exit_prepare_event(pipes, current, &run);
 		}
-
-    usleep(1 * 1000);
 	}
 
 	if (current == 0) {
