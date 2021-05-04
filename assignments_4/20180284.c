@@ -53,15 +53,16 @@ Memory create_mem(size_t len) {
 	return (Memory) { .chunks = chunks, .heep = heep, .len = len, .next = next };
 }
 
-void free_mem(Memory *mem) {
-	free(mem->heep);
-	
+void free_mem(Memory *mem) {	
 	Chunk *currnet = mem->chunks.first;
 	while (currnet != 0) {
 		Chunk *be_free = currnet;
 		currnet = currnet->next;
+		free(be_free->name);
 		free(be_free);
 	}
+	
+	free(mem->heep);
 }
 
 int size_of_free_mem(const Memory *mem) {
