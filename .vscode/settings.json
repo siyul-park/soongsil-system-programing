@@ -25,6 +25,12 @@
         "string": "c",
         "string_view": "c",
         "unordered_map": "c",
-        "utility": "c"
+        "utility": "c",
+        "unistd.h": "c",
+        "assert.h": "c",
+        "string.h": "c",
+        "__functional_base_03": "c",
+        "__tuple": "c",
+        "cstddef": "c"
     }
 }

@@ -1,211 +1,284 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <unistd.h>
-#include <assert.h>
+#include <stdbool.h>
 #include <string.h>
+#include <assert.h>
 
 #include "20180284.h"
 
-#define MAX_PROCESS_COUNT 5
-#define BUFFER_SIZE 256
-#define READ 0
-#define WRITE 1
+#define MAX_STR_SIZE 256
 
-char read_event[BUFFER_SIZE] = "event:read";
-char pass_event[BUFFER_SIZE] = "event:pass";
-char exit_prepare_event[BUFFER_SIZE] = "event:exit_prepare";
-char exit_event[BUFFER_SIZE] = "event:exit";
+typedef struct Chunk {
+	char *name;
+    size_t len;
+	struct Chunk *next;
+} Chunk;
 
-int create_process(size_t size) 
-{
-	static int current = 0;
+typedef struct Chunks {
+	Chunk *first;
+} Chunks;
 
-	if (size <= 0) {
-		return current;
-	}
 
-	pid_t child = fork();
-	if (child == 0) {
-		current++;
-		return create_process(size - 1);
-	}
+typedef struct Memory {
+	char *heep;
 
-	return current;
+    size_t len;
+	char *next;
+
+	Chunks chunks;
+} Memory;
+
+void dump_heap(const void *mem, size_t len) {
+	const char *buffer = mem;
+	size_t i;
+	for (i = 0; i < len; i++) {
+	    if (i > 0 && i % 16 == 0) {
+            printf("\n");
+		}
+        printf("%02x ", buffer[i] & 0xff);
+    }
+	puts(""); 
 }
 
-int nomalize_index(int index, size_t size)
-{
-	if (index < 0) {
-		return index + size;
-	} 
-	if (index >= size) {
-		return index - size;
-	}
-
-	return index;
+void dump_mem(const Memory *mem) {
+	dump_heap(mem->heep, mem->len);
 }
 
-int get_next_index(int current, size_t size) 
-{
-	return nomalize_index(current + 1, size);
+Memory create_mem(size_t len) {
+	char *heep = calloc(sizeof(char), len);
+	char *next = heep;
+	Chunks chunks = { .first = 0 };
+
+	return (Memory) { .chunks = chunks, .heep = heep, .len = len, .next = next };
 }
 
-int get_prev_index(int current, size_t size) 
-{
-	return nomalize_index(current - 1, size);
-}
-
-
-void send_read_event(int pipes[MAX_PROCESS_COUNT][2], int current) 
-{
-	int next = get_next_index(current, MAX_PROCESS_COUNT);
-	write(pipes[next][WRITE], read_event, BUFFER_SIZE);
-}
-
-void send_pass_event(int pipes[MAX_PROCESS_COUNT][2], int current, int pass_proccess_size) 
-{
-	int next = get_next_index(current, MAX_PROCESS_COUNT);
-	write(pipes[next][WRITE], pass_event, BUFFER_SIZE);
-	write(pipes[next][WRITE], &pass_proccess_size, sizeof(int));
-}
-
-void send_exit_event(int pipes[MAX_PROCESS_COUNT][2], int current) 
-{
-	int prev = get_prev_index(current, MAX_PROCESS_COUNT);
-	if (prev < current) {
-		write(pipes[prev][WRITE], exit_event, BUFFER_SIZE);
+void free_mem(Memory *mem) {
+	free(mem->heep);
+	
+	Chunk *currnet = mem->chunks.first;
+	while (currnet != 0) {
+		Chunk *be_free = currnet;
+		currnet = currnet->next;
+		free(be_free);
 	}
 }
 
-void process_exit(int pipes[MAX_PROCESS_COUNT][2], int current, int *run) 
-{
-	pid_t pid = getpid();
-
-	printf("%d I’m exiting...\n", pid);
-
-	send_exit_event(pipes, current);
-	*run = 0;
+bool can_allocate_mem(const Memory *mem, size_t value_size) {
+	return value_size <= size_of_free_mem(mem);
 }
 
-void send_exit_prepare_event(int pipes[MAX_PROCESS_COUNT][2], int current, int *run) 
-{
-	int next = get_next_index(current, MAX_PROCESS_COUNT);
-	if (next > current) {
-		write(pipes[next][WRITE], exit_prepare_event, BUFFER_SIZE);
-	}  else {
-		process_exit(pipes, current, run);
-	}
+size_t size_of_free_mem(const Memory *mem) {
+	return mem->len - (mem->next - mem->heep);
 }
 
-void process_read_all(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current, int *run) 
-{
-	pid_t pid = getpid();
+void allocate_mem(Memory *mem, const char *name, const void *value, size_t value_size) {
+	memcpy(mem->next, value, value_size);
+	mem->next += value_size;
 
-	printf("%d Read all data\n", pid);
-	send_exit_prepare_event(pipes, current, run);
-}
-
-void process_read_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current, int *run) 
-{
-	pid_t pid = getpid();
-
-	char *line = NULL;
-	size_t length = 0;
-
-	if (getline(&line, &length, fp) == -1) {
-		process_read_all(fp, pipes, current, run);
-		return;
+	Chunk *last = mem->chunks.first;
+	while (last != 0 && last->next != 0) {
+		last = last->next;
 	}
 
-	printf("%d %s", pid, line);
+	if (last == 0) {
+		Chunk *chunk = malloc(sizeof(Chunk));
+		char *name_cpy = calloc(sizeof(char), strlen(name) + 1);
+		strcpy(name_cpy, name);
 
-	// Check is end
-	int last_pos = ftell(fp);
-	if (getline(&line, &length, fp) == -1) {
-		process_read_all(fp, pipes, current, run);
-		return;
-	}
-	fseek(fp, last_pos, SEEK_SET);
+		chunk->len = value_size;
+		chunk->name = name_cpy;
+		chunk->next = 0;
 
-	free(line);
-
-	send_pass_event(pipes, current, MAX_PROCESS_COUNT - 1);
-	send_read_event(pipes, current);
-}
-
-void process_pass_line(FILE * fp, int pipes[MAX_PROCESS_COUNT][2], int current) 
-{
-	char * line = NULL;
-	size_t length = 0;
-
-	if (getline(&line, &length, fp) == -1) {
-		return;
-	}
-
-	int pass_proccess_size;
-	read(pipes[current][READ], &pass_proccess_size, sizeof(int));
-
-	if (--pass_proccess_size > 0) {
-		send_pass_event(pipes, current, pass_proccess_size);
-	}
-}
-
-void process_exit_prepare(int pipes[MAX_PROCESS_COUNT][2], int current, int *run) 
-{
-	send_exit_prepare_event(pipes, current, run);
-}
-
-int main(int argc, char * argv[]) 
-{
-	if (argc != 2) {
-		printf("Usage: 20180284 <file>\n");
-		return 0;
-	}
-
-	int pipes[MAX_PROCESS_COUNT][2] = {};
-	for (int i = 0; i < MAX_PROCESS_COUNT; i++) {
-		assert(pipe(pipes[i]) != -1);
-	}
-
-	int current = create_process(MAX_PROCESS_COUNT - 1);
-
-	FILE * fp = fopen(argv[1], "r");
-	if (fp == NULL) {
-		printf("Error Unable to open %s\n", argv[1]);
-		return 0;
-	}
-
-	char buffer[BUFFER_SIZE] = {};
-
-	int run = 1;
-
-	if (current == 0) {
-		process_read_line(fp, pipes, current, &run);
-	}
-	while (run) {
-		memset(buffer, 0, BUFFER_SIZE);
-		read(pipes[current][READ], buffer, BUFFER_SIZE);
-
-		if (strcmp(buffer, read_event) == 0) {
-			process_read_line(fp, pipes, current, &run);
-		} else if (strcmp(buffer, pass_event) == 0) {
-			process_pass_line(fp, pipes, current);
-   		} else if (strcmp(buffer, exit_prepare_event) == 0) {
-			process_exit_prepare(pipes, current, &run);
-		} else if (strcmp(buffer, exit_event) == 0) {
-			process_exit(pipes, current, &run);
+		mem->chunks.first = chunk;
+	} else {
+		if (strcmp(last->name, name) == 0) {
+			last->len += value_size;
 		} else {
-			send_exit_prepare_event(pipes, current, &run);
+			Chunk *chunk = malloc(sizeof(Chunk));
+			char *name_cpy = calloc(sizeof(char), strlen(name) + 1);
+			strcpy(name_cpy, name);
+
+			chunk->len = value_size;
+			chunk->name = name_cpy;
+			chunk->next = 0;
+
+			last->next = chunk;
 		}
 	}
+}
 
-	if (current == 0) {
-		for (int i = 0; i < MAX_PROCESS_COUNT; i++) {
-			close(pipes[i][READ]);
-			close(pipes[i][WRITE]);
-		}
+void deallocate_mem(Memory *mem, char *name) {
+	Chunk *pre = 0;
+	Chunk *currnet = mem->chunks.first;
+
+	char *location = mem->heep;
+	while (currnet != 0 && strcmp(currnet->name, name) != 0) {
+		location += currnet->len;
+
+		pre = currnet;
+		currnet = currnet->next;
+	}
+	
+	if (currnet == 0) {
+		return;
 	}
 
-	fclose(fp);
+	for (char *ch = location; ch < mem->next; ch++) {
+		char *next = ch + currnet->len;
+
+		char value = 0;
+		if (next < mem->next) {
+			value = *next;
+		}
+
+		*ch = value;
+	}
+
+	mem->next -= currnet->len;
+
+	if (pre == 0) {
+		mem->chunks.first = currnet->next;
+	} else {
+		pre->next = currnet->next;
+	}
+
+	free(currnet->name);
+	free(currnet);
+}
+
+int main() {
+	Memory mem = create_mem(256);
+
+	while (true) {
+		printf("Do you want to allocate data (1) or deallocate (2) ?\n");
+		
+		int operator = 0;
+		scanf("%d", &operator);
+		assert(operator == 1 || operator == 2);
+
+		// allocate 
+		if (operator == 1) {
+			printf("What is the type of data want to allocate and what will be the name of the data?\n");
+			
+			char type[MAX_STR_SIZE] = { 0 };
+			char name[MAX_STR_SIZE] = { 0 };
+			scanf("%s %s", type, name);
+
+			if (strcmp(type, "int") == 0) {
+				size_t value_size = sizeof(int);
+				if (!can_allocate_mem(&mem, value_size)) {
+					printf("There is not enough memory for the data, you can only use %d byte(s)\n", size_of_free_mem(&mem));
+					break;
+				}
+
+				printf("Please specify a value for the data type\n");
+				int value = 0;
+				scanf("%d", &value);
+
+				allocate_mem(&mem, name, &value, value_size);
+
+				printf("%s has been allocated successfully\n", name);
+				printf("Here is the mem dump\n");
+				dump_mem(&mem);
+			} else if (strcmp(type, "double") == 0) {
+				size_t value_size = sizeof(double);
+				if (!can_allocate_mem(&mem, value_size)) {
+					printf("There is not enough memory for the data, you can only use %d byte(s)\n", size_of_free_mem(&mem));
+					break;
+				}
+
+				printf("Please specify a value for the data type\n");
+				double value = 0.0;
+				scanf("%lf", &value);
+
+				allocate_mem(&mem, name, &value, value_size);
+
+				printf("%s has been allocated successfully\n", name);
+				printf("Here is the mem dump\n");
+				dump_mem(&mem);
+			} else if (strcmp(type, "char") == 0) {
+				size_t value_size = sizeof(char);
+				if (!can_allocate_mem(&mem, value_size)) {
+					printf("There is not enough memory for the data, you can only use %d byte(s)\n", size_of_free_mem(&mem));
+					break;
+				}
+
+				printf("Please specify a value for the data type\n");
+				char value = 0.0;
+				scanf("%c", &value);
+
+				allocate_mem(&mem, name, &value, value_size);
+
+				printf("%s has been allocated successfully\n", name);
+				printf("Here is the mem dump\n");
+				dump_mem(&mem);
+			} else if (strcmp(type, "struct") == 0) {
+				printf("Please specify a number of value for the data type\n");
+				int count = 0;
+				scanf("%d", &count);
+
+				printf("Please specify data types and a values for the data type\n");
+				for (int i = 0; i < count; i++) {					
+					char type[MAX_STR_SIZE] = { 0 };
+					scanf("%s ", type);
+
+					if (strcmp(type, "int") == 0) {
+						size_t value_size = sizeof(int);
+						if (!can_allocate_mem(&mem, value_size)) {
+							printf("There is not enough memory for the data, you can only use %d byte(s)\n", size_of_free_mem(&mem));
+							break;
+						}
+
+						int value = 0;
+						scanf("%d", &value);
+
+						allocate_mem(&mem, name, &value, value_size);	
+					} else if (strcmp(type, "double") == 0) {
+						size_t value_size = sizeof(double);
+						if (!can_allocate_mem(&mem, value_size)) {
+							printf("There is not enough memory for the data, you can only use %d byte(s)\n", size_of_free_mem(&mem));
+							break;
+						}
+
+						double value = 0;
+						scanf("%lf", &value);
+
+						allocate_mem(&mem, name, &value, value_size);	
+					} else if (strcmp(type, "char") == 0) {
+						size_t value_size = sizeof(char);
+						if (!can_allocate_mem(&mem, value_size)) {
+							printf("There is not enough memory for the data, you can only use %d byte(s)\n", size_of_free_mem(&mem));
+							break;
+						}
+
+						char value = 0;
+						scanf("%c", &value);
+
+						allocate_mem(&mem, name, &value, value_size);	
+					}
+				}
+
+				printf("%s has been allocated successfully\n", name);
+				printf("Here is the mem dump\n");
+				dump_mem(&mem);
+			} else {
+				printf("%s is not supported\n", type);
+			}
+		// deallocate
+		} else {
+			printf("What is the name of data want to deallocate?\n");
+			
+			char name[MAX_STR_SIZE] = { 0 };
+			scanf("%s", name);
+
+			deallocate_mem(&mem, name);
+
+			printf("%s has been deallocated successfully\n", name);
+			printf("Here is the mem dump\n");
+			dump_mem(&mem);
+		}
+	}
+	
+	free_mem(&mem);
 	return 0;
 }
