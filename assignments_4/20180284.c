@@ -42,6 +42,7 @@ void dump_heap(const void *mem, size_t len) {
 
 void dump_mem(const Memory *mem) {
 	dump_heap(mem->heep, mem->len);
+	printf("\n");
 }
 
 Memory create_mem(size_t len) {
@@ -63,12 +64,12 @@ void free_mem(Memory *mem) {
 	}
 }
 
-bool can_allocate_mem(const Memory *mem, size_t value_size) {
-	return value_size <= size_of_free_mem(mem);
+int size_of_free_mem(const Memory *mem) {
+	return mem->len - (mem->next - mem->heep);
 }
 
-size_t size_of_free_mem(const Memory *mem) {
-	return mem->len - (mem->next - mem->heep);
+bool can_allocate_mem(const Memory *mem, size_t value_size) {
+	return value_size <= size_of_free_mem(mem);
 }
 
 void allocate_mem(Memory *mem, const char *name, const void *value, size_t value_size) {
