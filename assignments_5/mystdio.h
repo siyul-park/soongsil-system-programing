@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#define BUFSIZE 1024
+#define BUFSIZE 4
 #define EOF -1
 
 #define stdin  1
@@ -25,7 +25,7 @@
 #endif
 
 typedef struct FILE {
-    int file_descriptor;
+    int fd;
     int flag;
 
     char *buffer;
@@ -34,10 +34,6 @@ typedef struct FILE {
 
     int offset;
 } FILE;
-
-int get_open_only_flag(const int flag) {
-    return flag & 0x0003;
-}
 
 int get_flags(const char *mode) {
     static char *modes[] = { 
@@ -65,19 +61,19 @@ FILE *fopen(const char *pathname, const char *mode) {
     int flag = get_flags(mode);
     assert(flag != -1);
     
-    int file_descriptor = open(pathname, flag);
-    assert(file_descriptor != 0);
+    int fd = open(pathname, flag);
+    assert(fd != 0);
 
     int offset = 0;
     if ((flag & O_APPEND) != 0) {
-        offset = lseek(file_descriptor, 0, SEEK_END);
+        offset = lseek(fd, 0, SEEK_END);
     } else {
-        offset = lseek(file_descriptor, 0, SEEK_SET);
+        offset = lseek(fd, 0, SEEK_SET);
     }
 
     char *buffur = malloc(BUFSIZE);
     assert(buffur != NULL);
-    size_t size = read(file_descriptor, buffur, BUFSIZE);
+    size_t size = read(fd, buffur, BUFSIZE);
     if (size > BUFSIZE) {
         size = 0;
     }
@@ -87,7 +83,7 @@ FILE *fopen(const char *pathname, const char *mode) {
     memset(file, 0, sizeof(FILE));
 
     file->flag = flag;
-    file->file_descriptor = file_descriptor;
+    file->fd = fd;
 
     file->buffer = buffur;
     file->buffer_size = size;
@@ -99,18 +95,17 @@ FILE *fopen(const char *pathname, const char *mode) {
 }
 
 int fflush(FILE *stream) {    
-    int current = lseek(stream->file_descriptor, 0, SEEK_CUR);
+    int current = lseek(stream->fd, 0, SEEK_CUR);
     if (current == -1) {
         return EOF;
     }
-    if (lseek(stream->file_descriptor, stream->offset, SEEK_SET) == -1) {
+    if (lseek(stream->fd, stream->offset, SEEK_SET) == -1) {
         return EOF;
     }
 
     int result = 0;
-    int open_olny_flag = get_open_only_flag(stream->flag);
-    if (open_olny_flag == O_RDONLY) {
-        size_t size = read(stream->file_descriptor, stream->buffer, BUFSIZE);
+    if ((stream->flag & O_RDONLY) == O_RDONLY) {
+        size_t size = read(stream->fd, stream->buffer, BUFSIZE);
         if (size > BUFSIZE) {
             size = 0;
         }
@@ -119,12 +114,12 @@ int fflush(FILE *stream) {
             result = EOF;
         }
     } else {
-        if (write(stream->file_descriptor, stream->buffer, stream->buffer_size) == -1) {
+        if (write(stream->fd, stream->buffer, stream->buffer_size) == -1) {
             result = EOF;
         }
     }
 
-    if (lseek(stream->file_descriptor, current, SEEK_SET) == -1) {
+    if (lseek(stream->fd, current, SEEK_SET) == -1) {
         result = EOF;
     }
 
@@ -132,22 +127,21 @@ int fflush(FILE *stream) {
 }
 
 int feof(FILE *stream) {
-    int open_olny_flag = get_open_only_flag(stream->flag);
-    if (open_olny_flag == O_WRONLY) {
+    if ((stream->flag & O_WRONLY) == O_WRONLY) {
         return 0;
     }
     
-    int current = lseek(stream->file_descriptor, 0, SEEK_CUR);
+    int current = lseek(stream->fd, 0, SEEK_CUR);
     if (current == -1) {
         return 1;
     }
-    if (lseek(stream->file_descriptor, stream->offset + stream->buffer_offset, SEEK_SET) == -1) {
+    if (lseek(stream->fd, stream->offset + stream->buffer_offset, SEEK_SET) == -1) {
         return 1;
     }
     
     int result = 0;
     char ch;
-    size_t size = read(stream->file_descriptor, &ch, 1);
+    size_t size = read(stream->fd, &ch, 1);
     if (size > 1) {
         size = 0;
     }
@@ -155,7 +149,7 @@ int feof(FILE *stream) {
         result = 1;
     }
 
-    if (lseek(stream->file_descriptor, current, SEEK_SET) == -1) {
+    if (lseek(stream->fd, current, SEEK_SET) == -1) {
         result = 1;
     }
 
@@ -165,12 +159,12 @@ int feof(FILE *stream) {
 int fseek(FILE *stream, int offset, int whence) {
     fflush(stream);
     
-    int file_offset = lseek(stream->file_descriptor, offset, whence);
+    int file_offset = lseek(stream->fd, offset, whence);
     if (file_offset == -1) {
         return EOF;
     }
 
-    size_t size = read(stream->file_descriptor, stream->buffer, BUFSIZE);
+    size_t size = read(stream->fd, stream->buffer, BUFSIZE);
     if (size > BUFSIZE) {
         size = 0;
     }
@@ -187,8 +181,7 @@ int fseek(FILE *stream, int offset, int whence) {
 }
 
 int fread(void *ptr, int size, int nmemb, FILE *stream) {
-    int open_olny_flag = get_open_only_flag(stream->flag);
-    if (open_olny_flag == O_WRONLY) {
+    if ((stream->flag & O_WRONLY) == O_WRONLY) {
         return 0;
     }
 
@@ -214,8 +207,7 @@ int fread(void *ptr, int size, int nmemb, FILE *stream) {
 }
 
 int fwrite(const void *ptr, int size, int nmemb, FILE *stream) {
-    int open_olny_flag = get_open_only_flag(stream->flag);
-    if (open_olny_flag == O_RDONLY) {
+    if ((stream->flag & O_RDONLY) == O_RDONLY) {
         return 0;
     }
 
@@ -265,7 +257,7 @@ int fclose(FILE *stream) {
     if (fflush(stream) == EOF) {
         return EOF;
     }
-    if (close(stream->file_descriptor) == -1) {
+    if (close(stream->fd) == -1) {
         return EOF;
     }
     free(stream->buffer);
