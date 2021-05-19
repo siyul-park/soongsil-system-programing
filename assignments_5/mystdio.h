@@ -64,15 +64,11 @@ MFILE *m_fopen(const char *pathname, const char *mode) {
     int flag = get_flags(mode);
     assert(flag != -1);
     
-    int fd = open(pathname, flag);
+    int fd = open(pathname, flag & (~O_APPEND));
     assert(fd != -1);
 
     int offset = 0;
-    if ((flag & O_APPEND) == O_APPEND) {
-        offset = lseek(fd, 0, SEEK_END);
-    } else {
-        offset = lseek(fd, 0, SEEK_SET);
-    }
+    offset = lseek(fd, 0, SEEK_SET);
 
     char *buffur = malloc(BUFSIZE);
     assert(buffur != NULL);
@@ -195,6 +191,13 @@ int m_fwrite(const void *ptr, int size, int nmemb, MFILE *stream) {
         return 0;
     }
 
+    int origin_offset = -1;
+    if ((stream->flag & O_APPEND) == O_APPEND) {
+        origin_offset = m_fseek(stream, 0, SEEK_CUR);
+        assert(origin_offset != -1);
+        m_fseek(stream, 0, SEEK_END);
+    }
+
     int renaming = size * nmemb;
     const char *current = ptr;
     while (renaming > 0) {
@@ -212,6 +215,10 @@ int m_fwrite(const void *ptr, int size, int nmemb, MFILE *stream) {
         if (stream->buffer_offset > stream->buffer_size) {
             stream->buffer_size = stream->buffer_offset;
         }
+    }
+
+    if ((stream->flag & O_APPEND) == O_APPEND) {
+        m_fseek(stream, origin_offset, SEEK_SET);
     }
 
     return size * nmemb - renaming;

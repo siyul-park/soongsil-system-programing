@@ -268,7 +268,7 @@ void test_fputs(){
 
     m_fputc('4', file_ptr);
     m_fflush(file_ptr);
-    
+
     char data2[200] = {'a'};
     test_get_current_all_string(data2);
     assert(data2[0] == '1');
@@ -493,14 +493,16 @@ void test_append_read_write(){
     test_get_current_all_string(data);
 
     assert(iCount == 4);
-    assert(arr1[0] == 'A');
-    assert(arr1[1] == 'B');
-    assert(arr1[2] == 'C');
-    assert(arr1[3] == 'D');
-    assert(arr1[4] == '1');
-    assert(arr1[5] == '2');
-    assert(arr1[6] == '3');
-    assert(arr1[7] == '4');
+    assert(data[0] == 'A');
+    assert(data[1] == 'B');
+    assert(data[2] == 'C');
+    assert(data[3] == 'D');
+    assert(data[4] == 'E');
+    assert(data[5] == 'F');
+    assert(data[6] == '1');
+    assert(data[7] == '2');
+    assert(data[8] == '3');
+    assert(data[9] == '4');
     m_fclose(file_ptr);
     printf("[test] test_append_read_write [success]\n");
 }
