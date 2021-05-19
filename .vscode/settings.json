@@ -31,6 +31,12 @@
         "string.h": "c",
         "__functional_base_03": "c",
         "__tuple": "c",
-        "cstddef": "c"
+        "cstddef": "c",
+        "mystdio.h": "c",
+        "stdio.h": "c",
+        "stdlib.h": "c",
+        "istream": "c",
+        "locale": "c",
+        "cstdio": "c"
     }
 }

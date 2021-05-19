@@ -207,7 +207,7 @@ int main() {
 
 				printf("Please specify a value for the data type\n");
 				char value = 0.0;
-				scanf("%c", &value);
+				scanf(" %c", &value);
 
 				allocate_mem(&mem, name, &value, value_size);
 
@@ -254,7 +254,7 @@ int main() {
 						}
 
 						char value = 0;
-						scanf("%c", &value);
+						scanf(" %c", &value);
 
 						allocate_mem(&mem, name, &value, value_size);	
 					}
