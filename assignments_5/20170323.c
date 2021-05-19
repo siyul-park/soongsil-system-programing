@@ -104,7 +104,6 @@ void test_read_write(){
     assert(arr0[0] == 'A');
 
     icount = m_fwrite(arr3, sizeof(char), sizeof(arr3), file_ptr);
-    m_fflush(file_ptr);
     assert(icount == 2);
 
     m_fclose(file_ptr);
@@ -134,20 +133,16 @@ void test_write_read(){
     int icount;
 
     icount = m_fwrite(arr2, sizeof(char), sizeof(arr2), file_ptr);
-    assert((int)lseek(file_ptr->fd, 0, SEEK_CUR) == 0);
     assert(icount == 3);
-
 
     icount = m_fread(arr0, sizeof(char), sizeof(arr0), file_ptr);
 
-    assert((int)lseek(file_ptr->fd, 0, SEEK_CUR) == 6);
     assert(icount == 1);
     assert(arr0[0] == 'D');
     assert(m_feof(file_ptr) != -1);
 
     icount = m_fread(arr3, sizeof(char), sizeof(arr3), file_ptr);
 
-    assert((int)lseek(file_ptr->fd, 0, SEEK_CUR) == 6);
     assert(icount == 2);
     assert(arr3[0] == 'E');
     assert(arr3[1] == 'F');
@@ -155,7 +150,6 @@ void test_write_read(){
 
     icount = m_fread(arr0, sizeof(char), sizeof(arr0), file_ptr);
 
-    assert((int)lseek(file_ptr->fd, 0, SEEK_CUR) == 6);
     assert(icount == 0);
     assert(arr0[0] == 'D');
     assert(m_feof(file_ptr) == -1);
@@ -187,16 +181,13 @@ void test_getc_putc(){
     int icount;
 
     icount = m_fgetc(file_ptr);
-    assert((int)lseek(file_ptr->fd, 0, SEEK_CUR) == 4);
     assert(icount == 'A');
 
     for(int i=0; i<2; i++){
         icount = m_fputc(arr1[i], file_ptr);
     }
     
-    assert((int)lseek(file_ptr->fd, 0, SEEK_CUR) == 4);
     m_fflush(file_ptr);
-    assert((int)lseek(file_ptr->fd, 0, SEEK_CUR) == 3);
 
     m_fclose(file_ptr);
 
@@ -228,10 +219,8 @@ void test_putc_getc(){
     for(int i=0; i<3; i++){
         icount = m_fputc(arr1[i], file_ptr);
     }
-    assert((int)lseek(file_ptr->fd, 0, SEEK_CUR) == 0);
 
     icount = m_fgetc(file_ptr);
-    assert((int)lseek(file_ptr->fd, 0, SEEK_CUR) == 6);
     assert(icount == 'D');
 
     m_fclose(file_ptr);
@@ -278,6 +267,7 @@ void test_fputs(){
     assert(data[0] == 'a');
 
     m_fputc('4', file_ptr);
+    m_fflush(file_ptr);
     
     char data2[200] = {'a'};
     test_get_current_all_string(data2);
@@ -333,13 +323,11 @@ void test_fseek(){
     int icount;
 
     icount = m_fread(arr0, sizeof(char), sizeof(arr0), file_ptr);
-    assert((int)lseek(file_ptr->fd, 0, SEEK_CUR) == 4);
     assert(icount == 1);
     assert(arr0[0] == 'A');
     m_fseek(file_ptr, -1, SEEK_CUR);
 
     icount = m_fread(arr0, sizeof(char), sizeof(arr0), file_ptr);
-    assert((int)lseek(file_ptr->fd, 0, SEEK_CUR) == 4);
     assert(icount == 1);
     assert(arr0[0] == 'A');
     
@@ -360,15 +348,12 @@ void test_read_fseek_write(){
     int icount;
 
     icount = m_fread(arr0, sizeof(char), sizeof(arr0), file_ptr);
-    assert((int)lseek(file_ptr->fd, 0, SEEK_CUR) == 4);
     assert(icount == 1);
     assert(arr0[0] == 'A');
     m_fseek(file_ptr, 1, SEEK_CUR);
 
     icount = m_fwrite(arr1, sizeof(char), sizeof(arr1), file_ptr);
-    assert((int)lseek(file_ptr->fd, 0, SEEK_CUR) == 6);
     m_fflush(file_ptr);
-    assert((int)lseek(file_ptr->fd, 0, SEEK_CUR) == 6);
     assert(icount == 4);
 
     char data[TEST_BUF_SIZE];
@@ -399,15 +384,12 @@ void test_write_fseek_read(){
 
     icount = m_fwrite(arr1, sizeof(char), sizeof(arr1), file_ptr);
     
-    assert((int)lseek(file_ptr->fd, 0, SEEK_CUR) == 4);
     assert(icount == 4);
 
     m_fseek(file_ptr, 1, SEEK_CUR);
-    assert((int)lseek(file_ptr->fd, 0, SEEK_CUR) == 5);
 
 
     icount = m_fread(arr0, sizeof(char), sizeof(arr0), file_ptr);
-    assert((int)lseek(file_ptr->fd, 0, SEEK_CUR) == 6);
     assert(icount == 1);
     assert(arr0[0] == 'F');
 
@@ -430,7 +412,6 @@ void test_getc_fseek_putc(){
 
     icount = m_fgetc(file_ptr);
 
-    assert((int)lseek(file_ptr->fd, 0, SEEK_CUR) == 4);
     assert(icount == 'A');
     m_fseek(file_ptr, 1, SEEK_CUR);
 
@@ -438,9 +419,7 @@ void test_getc_fseek_putc(){
         icount = m_fputc(arr1[i], file_ptr);
     }
 
-    assert((int)lseek(file_ptr->fd, 0, SEEK_CUR) == 2);
     m_fflush(file_ptr);
-    assert((int)lseek(file_ptr->fd, 0, SEEK_CUR) == 5);
 
     m_fclose(file_ptr);
     printf("[test] test_getc_fseek_putc [success]\n");
@@ -463,13 +442,10 @@ void test_putc_fseek_getc(){
         icount = m_fputc(arr1[i], file_ptr);
     }
 
-    assert((int)lseek(file_ptr->fd, 0, SEEK_CUR) == 0);
     m_fflush(file_ptr);
-    assert((int)lseek(file_ptr->fd, 0, SEEK_CUR) == 3);
     
     m_fseek(file_ptr, -1, SEEK_CUR);
     icount = m_fgetc(file_ptr);
-    assert((int)lseek(file_ptr->fd, 0, SEEK_CUR) == 6);
     assert(icount == 'c');
     m_fclose(file_ptr);
 

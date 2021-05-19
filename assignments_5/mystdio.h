@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <stdbool.h>
 
 #define BUFSIZE 4
 #define EOF -1
@@ -33,6 +34,8 @@ typedef struct MFILE {
     int buffer_offset;
 
     int offset;
+
+    bool eof;
 } MFILE;
 
 int get_flags(const char *mode) {
@@ -73,12 +76,13 @@ MFILE *m_fopen(const char *pathname, const char *mode) {
 
     char *buffur = malloc(BUFSIZE);
     assert(buffur != NULL);
+    memset(buffur, 0, sizeof(BUFSIZE));
     size_t size = read(fd, buffur, BUFSIZE);
     if (size > BUFSIZE) {
         size = 0;
     }
 
-    MFILE *file = malloc(sizeof(file));
+    MFILE *file = malloc(sizeof(MFILE));
     assert(file != NULL);
     memset(file, 0, sizeof(MFILE));
 
@@ -91,10 +95,16 @@ MFILE *m_fopen(const char *pathname, const char *mode) {
 
     file->offset = offset;
 
+    file->eof = false;
+
     return file;
 }
 
 int m_fflush(MFILE *stream) {    
+    if ((stream->flag & O_ACCMODE) == O_RDONLY || stream->buffer_size == 0) {
+        return 0;
+    }
+    
     int current = lseek(stream->fd, 0, SEEK_CUR);
     if (current == -1) {
         return EOF;
@@ -104,19 +114,8 @@ int m_fflush(MFILE *stream) {
     }
 
     int result = 0;
-    if ((stream->flag & O_ACCMODE) == O_RDONLY) {
-        size_t size = read(stream->fd, stream->buffer, BUFSIZE);
-        if (size > BUFSIZE) {
-            size = 0;
-        }
-        stream->buffer_size = size;
-        if (stream->buffer_size < stream->buffer_offset) {
-            result = EOF;
-        }
-    } else {
-        if (write(stream->fd, stream->buffer, stream->buffer_size) == -1) {
-            result = EOF;
-        }
+    if (write(stream->fd, stream->buffer, stream->buffer_size) == -1) {
+        result = EOF;
     }
 
     lseek(stream->fd, current, SEEK_SET);
@@ -125,38 +124,20 @@ int m_fflush(MFILE *stream) {
 }
 
 int m_feof(MFILE *stream) {
-    if ((stream->flag & O_ACCMODE) == O_WRONLY) {
-        return 0;
-    }
-    
-    int current = lseek(stream->fd, 0, SEEK_CUR);
-    if (current == -1) {
+    if (stream->eof) {
         return EOF;
     }
-    if (lseek(stream->fd, stream->offset + stream->buffer_offset, SEEK_SET) == -1) {
-        return EOF;
-    }
-    
-    int result = 0;
-    char ch;
-    size_t size = read(stream->fd, &ch, 1);
-    if (size > 1) {
-        size = 0;
-    }
-    if (size == 0) {
-        result = EOF;
-    }
 
-    if (lseek(stream->fd, current, SEEK_SET) == -1) {
-        result = EOF;
-    }
-
-    return result;
+    return 0;
 }
 
 int m_fseek(MFILE *stream, int offset, int whence) {
     m_fflush(stream);
     
+    if (lseek(stream->fd, stream->offset + stream->buffer_offset, SEEK_SET) == EOF) {
+        return EOF;
+    }
+
     int file_offset = lseek(stream->fd, offset, whence);
     if (file_offset == -1) {
         return EOF;
@@ -170,6 +151,10 @@ int m_fseek(MFILE *stream, int offset, int whence) {
     stream->offset = file_offset;
     stream->buffer_size = size;
     stream->buffer_offset = 0;
+
+    if (lseek(stream->fd, file_offset, SEEK_SET) == -1) {
+        return EOF;
+    }
 
     if (size == 0) {
         return EOF;
@@ -186,6 +171,11 @@ int m_fread(void *ptr, int size, int nmemb, MFILE *stream) {
     int renaming = size * nmemb;
     char *current = ptr;
     while (renaming > 0) {
+        if (stream->buffer_offset == stream->buffer_size && m_fseek(stream, stream->offset + stream->buffer_size, SEEK_SET) == EOF) {
+            stream->eof = true;
+            break;
+        }
+
         size_t renaming_buffer = stream->buffer_size - stream->buffer_offset;
         size_t read_size = renaming <= renaming_buffer ? renaming : renaming_buffer;
 
@@ -194,10 +184,6 @@ int m_fread(void *ptr, int size, int nmemb, MFILE *stream) {
             current += read_size;
             renaming -= read_size;
             stream->buffer_offset += read_size;
-        }
-
-        if (stream->buffer_offset == stream->buffer_size && m_fseek(stream, stream->offset + stream->buffer_size, SEEK_SET) == EOF) {
-            break;
         }
     }
 
@@ -212,6 +198,10 @@ int m_fwrite(const void *ptr, int size, int nmemb, MFILE *stream) {
     int renaming = size * nmemb;
     const char *current = ptr;
     while (renaming > 0) {
+        if (stream->buffer_offset == BUFSIZE) {
+            m_fseek(stream, stream->offset + stream->buffer_size, SEEK_SET);
+        }
+
         size_t renaming_buffer = BUFSIZE - stream->buffer_offset;
         size_t write_size = renaming <= renaming_buffer ? renaming : renaming_buffer;
 
@@ -221,10 +211,6 @@ int m_fwrite(const void *ptr, int size, int nmemb, MFILE *stream) {
         stream->buffer_offset += write_size;
         if (stream->buffer_offset > stream->buffer_size) {
             stream->buffer_size = stream->buffer_offset;
-        }
-
-        if (stream->buffer_offset == BUFSIZE) {
-            m_fseek(stream, stream->offset + stream->buffer_size, SEEK_SET);
         }
     }
 
