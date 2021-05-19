@@ -5,8 +5,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
-#include <assert.h>
 #include <stdbool.h>
+#include <assert.h>
 
 #define BUFSIZE 4
 #define EOF -1
@@ -14,16 +14,6 @@
 #define stdin  1
 #define stdout 2
 #define stderr 3
-
-#ifndef SEEK_SET
-    #define SEEK_SET 0
-#endif
-#ifndef SEEK_CUR
-    #define SEEK_CUR 1
-#endif
-#ifndef SEEK_END
-    #define SEEK_END 2
-#endif
 
 typedef struct MFILE {
     int fd;
@@ -64,6 +54,7 @@ MFILE *m_fopen(const char *pathname, const char *mode) {
     int flag = get_flags(mode);
     assert(flag != -1);
     
+    // O_APPEND 는 fwrite 부분에서 제어
     int fd = open(pathname, flag & (~O_APPEND));
     assert(fd != -1);
 
@@ -127,7 +118,7 @@ int m_feof(MFILE *stream) {
     return 0;
 }
 
-int m_fseek(MFILE *stream, int offset, int whence) {
+int not_update_eof_seek(MFILE *stream, int offset, int whence) {
     m_fflush(stream);
     
     if (lseek(stream->fd, stream->offset + stream->buffer_offset, SEEK_SET) == EOF) {
@@ -159,6 +150,17 @@ int m_fseek(MFILE *stream, int offset, int whence) {
     return file_offset;
 }
 
+int m_fseek(MFILE *stream, int offset, int whence) {
+    int result = not_update_eof_seek(stream, offset, whence);
+    if (result == EOF) {
+        stream->eof = true;
+    } else {
+        stream->eof = false;
+    }
+
+    return result;
+}
+
 int m_fread(void *ptr, int size, int nmemb, MFILE *stream) {
     if ((stream->flag & O_ACCMODE) == O_WRONLY) {
         return 0;
@@ -168,7 +170,6 @@ int m_fread(void *ptr, int size, int nmemb, MFILE *stream) {
     char *current = ptr;
     while (renaming > 0) {
         if (stream->buffer_offset == stream->buffer_size && m_fseek(stream, stream->offset + stream->buffer_size, SEEK_SET) == EOF) {
-            stream->eof = true;
             break;
         }
 
@@ -193,16 +194,16 @@ int m_fwrite(const void *ptr, int size, int nmemb, MFILE *stream) {
 
     int origin_offset = -1;
     if ((stream->flag & O_APPEND) == O_APPEND) {
-        origin_offset = m_fseek(stream, 0, SEEK_CUR);
+        origin_offset = lseek(stream->fd, 0, SEEK_CUR);
         assert(origin_offset != -1);
-        m_fseek(stream, 0, SEEK_END);
+        not_update_eof_seek(stream, 0, SEEK_END);
     }
 
     int renaming = size * nmemb;
     const char *current = ptr;
     while (renaming > 0) {
         if (stream->buffer_offset == BUFSIZE) {
-            m_fseek(stream, stream->offset + stream->buffer_size, SEEK_SET);
+            not_update_eof_seek(stream, stream->offset + stream->buffer_size, SEEK_SET);
         }
 
         size_t renaming_buffer = BUFSIZE - stream->buffer_offset;
@@ -218,7 +219,7 @@ int m_fwrite(const void *ptr, int size, int nmemb, MFILE *stream) {
     }
 
     if ((stream->flag & O_APPEND) == O_APPEND) {
-        m_fseek(stream, origin_offset, SEEK_SET);
+        not_update_eof_seek(stream, origin_offset, SEEK_SET);
     }
 
     return size * nmemb - renaming;
