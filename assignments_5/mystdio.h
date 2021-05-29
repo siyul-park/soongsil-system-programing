@@ -15,7 +15,7 @@
 #define stdout 2
 #define stderr 3
 
-typedef struct MFILE {
+typedef struct FILE {
     int fd;
     int flag;
 
@@ -26,7 +26,7 @@ typedef struct MFILE {
     int offset;
 
     bool eof;
-} MFILE;
+} FILE;
 
 int get_flags(const char *mode) {
     static char *modes[] = { 
@@ -50,13 +50,12 @@ int get_flags(const char *mode) {
     return -1;
 }
 
-MFILE *m_fopen(const char *pathname, const char *mode) {
+FILE *fopen(const char *pathname, const char *mode) {
     int flag = get_flags(mode);
     assert(flag != -1);
     
     // O_APPEND 는 fwrite 부분에서 제어
     int fd = open(pathname, flag & (~O_APPEND));
-    assert(fd != -1);
 
     int offset = 0;
     offset = lseek(fd, 0, SEEK_SET);
@@ -69,9 +68,9 @@ MFILE *m_fopen(const char *pathname, const char *mode) {
         size = 0;
     }
 
-    MFILE *file = malloc(sizeof(MFILE));
+    FILE *file = malloc(sizeof(FILE));
     assert(file != NULL);
-    memset(file, 0, sizeof(MFILE));
+    memset(file, 0, sizeof(FILE));
 
     file->flag = flag;
     file->fd = fd;
@@ -87,7 +86,7 @@ MFILE *m_fopen(const char *pathname, const char *mode) {
     return file;
 }
 
-int m_fflush(MFILE *stream) {    
+int fflush(FILE *stream) {    
     if ((stream->flag & O_ACCMODE) == O_RDONLY || stream->buffer_size == 0) {
         return 0;
     }
@@ -110,7 +109,7 @@ int m_fflush(MFILE *stream) {
     return result;
 }
 
-int m_feof(MFILE *stream) {
+int feof(FILE *stream) {
     if (stream->eof) {
         return EOF;
     }
@@ -118,8 +117,8 @@ int m_feof(MFILE *stream) {
     return 0;
 }
 
-int not_update_eof_seek(MFILE *stream, int offset, int whence) {
-    m_fflush(stream);
+int not_update_eof_seek(FILE *stream, int offset, int whence) {
+    fflush(stream);
     
     if (lseek(stream->fd, stream->offset + stream->buffer_offset, SEEK_SET) == EOF) {
         return EOF;
@@ -150,7 +149,7 @@ int not_update_eof_seek(MFILE *stream, int offset, int whence) {
     return file_offset;
 }
 
-int m_fseek(MFILE *stream, int offset, int whence) {
+int fseek(FILE *stream, int offset, int whence) {
     int result = not_update_eof_seek(stream, offset, whence);
     if (result == EOF) {
         stream->eof = true;
@@ -161,7 +160,7 @@ int m_fseek(MFILE *stream, int offset, int whence) {
     return result;
 }
 
-int m_fread(void *ptr, int size, int nmemb, MFILE *stream) {
+int fread(void *ptr, int size, int nmemb, FILE *stream) {
     if ((stream->flag & O_ACCMODE) == O_WRONLY) {
         return 0;
     }
@@ -169,7 +168,7 @@ int m_fread(void *ptr, int size, int nmemb, MFILE *stream) {
     int renaming = size * nmemb;
     char *current = ptr;
     while (renaming > 0) {
-        if (stream->buffer_offset == stream->buffer_size && m_fseek(stream, stream->offset + stream->buffer_size, SEEK_SET) == EOF) {
+        if (stream->buffer_offset == stream->buffer_size && fseek(stream, stream->offset + stream->buffer_size, SEEK_SET) == EOF) {
             break;
         }
 
@@ -187,7 +186,7 @@ int m_fread(void *ptr, int size, int nmemb, MFILE *stream) {
     return size * nmemb - renaming;
 }
 
-int m_fwrite(const void *ptr, int size, int nmemb, MFILE *stream) {
+int fwrite(const void *ptr, int size, int nmemb, FILE *stream) {
     if ((stream->flag & O_ACCMODE) == O_RDONLY) {
         return 0;
     }
@@ -225,9 +224,9 @@ int m_fwrite(const void *ptr, int size, int nmemb, MFILE *stream) {
     return size * nmemb - renaming;
 }
 
-int m_fgetc(MFILE *stream) {
+int fgetc(FILE *stream) {
     unsigned char ch = '\0';
-    size_t read_size = m_fread(&ch, 1, 1, stream);
+    size_t read_size = fread(&ch, 1, 1, stream);
     
     if (read_size == 0) {
         return EOF;
@@ -235,9 +234,9 @@ int m_fgetc(MFILE *stream) {
     return (int) ch;
 }
 
-int m_fputc(int c, MFILE *stream) {
+int fputc(int c, FILE *stream) {
     unsigned char ch = c;
-    size_t write_size = m_fwrite(&ch, 1, 1, stream);
+    size_t write_size = fwrite(&ch, 1, 1, stream);
     
     if (write_size == 0) {
         return EOF;
@@ -245,8 +244,8 @@ int m_fputc(int c, MFILE *stream) {
     return (int) ch;
 }
 
-int m_fclose(MFILE *stream) {
-    if (m_fflush(stream) == EOF) {
+int fclose(FILE *stream) {
+    if (fflush(stream) == EOF) {
         return EOF;
     }
     if (close(stream->fd) == -1) {
