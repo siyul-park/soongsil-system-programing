@@ -28,6 +28,7 @@ void reader(void)
     }
     int line_size = strlen(line);
     memcpy(buffer + allocated_size, line, line_size);
+    printf("Thread %d is reading a line\n", get_thread_id());
 
     V(&mutex);
     reader();
@@ -41,6 +42,7 @@ void writer(void)
         return;
     }
 
+    printf("Thread %d is writing a lines\n", get_thread_id());
     printf("%s", buffer);
     memset(buffer, 0, BUFFER_SIZE);
 
