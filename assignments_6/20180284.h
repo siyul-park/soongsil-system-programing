@@ -115,6 +115,7 @@ void P(semaphore_t *sem) {
 	sem->counter--;
 
 	if (sem->counter < 0) {
+        sem->counter++;
         addQueue(&(sem->sem_q), curr_thread);
         run();
     }
