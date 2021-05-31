@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "20180284.h"
 
@@ -29,6 +30,7 @@ void reader(void)
     int line_size = strlen(line);
     memcpy(buffer + allocated_size, line, line_size);
     printf("Thread %d is reading a line\n", get_thread_id());
+    allocated_size += line_size;
 
     V(&mutex);
     reader();
@@ -45,6 +47,7 @@ void writer(void)
     printf("Thread %d is writing a lines\n", get_thread_id());
     printf("%s", buffer);
     memset(buffer, 0, BUFFER_SIZE);
+    allocated_size = 0;
 
     V(&mutex);
     writer();
@@ -56,6 +59,7 @@ int main(int argc, char *argv[])
     mutex = sem_create(1);
 
     file = fopen(argv[1], "r");
+    assert(file != NULL);
 
     // create threads
     create_thread(reader);

@@ -43,11 +43,15 @@ tcb_t *delQueue(tcb_t **head) {
     }
 
     tcb_t *fist = *head;
+    if (fist == NULL) {
+      return NULL;
+    }
     if (fist->next == NULL) {
         *head = NULL;
         return fist;
     }
 
+    *head = fist->next;
     fist->next->prev = NULL;
     fist->next = NULL;
 
@@ -110,8 +114,7 @@ semaphore_t sem_create(int value) {
 void P(semaphore_t *sem) {
 	sem->counter--;
 
-	if (sem->counter <= 0) {
-        sem->counter++;
+	if (sem->counter < 0) {
         addQueue(&(sem->sem_q), curr_thread);
         run();
     }
@@ -124,7 +127,6 @@ void V(semaphore_t *sem) {
 	sem->counter++;
 
     if (sem->counter > 0) {
-        sem->counter--;
         tcb_t *prev_thread = delQueue(&(sem->sem_q));
         addQueue(&thread_queue, prev_thread);
     }
