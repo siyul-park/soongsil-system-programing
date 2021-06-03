@@ -129,7 +129,10 @@ void V(semaphore_t *sem) {
 
     if (sem->counter > 0) {
         tcb_t *prev_thread = delQueue(&(sem->sem_q));
-        addQueue(&thread_queue, prev_thread);
+        if (prev_thread != NULL) {
+            sem->counter--;
+            addQueue(&thread_queue, prev_thread);
+        } 
     }
 
 	yield();
