@@ -1,5 +1,5 @@
 #define BUFFER_SIZE 4096
-#define LINE_SIZE 1024
+#define LINE_SIZE 100
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,41 +16,48 @@ int allocated_size = 0;
 
 void reader(void)
 {
-    P(&mutex);
-    if (feof(file)) {
-        V(&mutex);
-        return;
-    }
+    while (1) {
+        P(&mutex);
+        if (feof(file)) {
+            V(&mutex);
+            return;
+        }
 
-    char line[LINE_SIZE] = { 0 };
-    if (fgets(line, LINE_SIZE, file) == NULL) {
-        V(&mutex);
-        return;
-    }
-    int line_size = strlen(line);
-    memcpy(buffer + allocated_size, line, line_size);
-    printf("Thread %d is reading a line\n", get_thread_id());
-    allocated_size += line_size;
+        char *line = malloc(LINE_SIZE);
+        memset(line, 0, LINE_SIZE);
 
-    V(&mutex);
-    reader();
+        if (fgets(line, LINE_SIZE, file) == NULL) {
+            free(line);
+            V(&mutex);
+            return;
+        }
+        int line_size = strlen(line);
+        memcpy(buffer + allocated_size, line, line_size);
+        printf("Thread %d is reading a line\n", get_thread_id());
+        allocated_size += line_size;
+
+        free(line);
+
+        V(&mutex);
+    }
 }
 
 void writer(void)
 {
-    P(&mutex);
-    if (allocated_size == 0) {
+    while (1) {
+        P(&mutex);
+        if (allocated_size == 0) {
+            V(&mutex);
+            return;
+        }
+
+        printf("Thread %d is writing a lines\n", get_thread_id());
+        printf("%s", buffer);
+        memset(buffer, 0, BUFFER_SIZE);
+        allocated_size = 0;
+
         V(&mutex);
-        return;
     }
-
-    printf("Thread %d is writing a lines\n", get_thread_id());
-    printf("%s", buffer);
-    memset(buffer, 0, BUFFER_SIZE);
-    allocated_size = 0;
-
-    V(&mutex);
-    writer();
 }
 
 int main(int argc, char *argv[])
@@ -58,7 +65,7 @@ int main(int argc, char *argv[])
 	// example of initializing a semaphore
     mutex = sem_create(1);
 
-    file = fopen(argv[1], "r");
+    file = fopen(argv[1], "r+");
     assert(file != NULL);
 
     // create threads
